@@ -95,6 +95,128 @@ header {
     background-color: #e5e3df; 
 }
 
+/* Map Floating Hint Banner */
+.map-hint {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(45, 106, 79, 0.95);
+    color: #ffffff;
+    padding: 0.45rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    text-align: center;
+    max-width: 90%;
+    transition: all 0.3s ease;
+}
+
+[data-theme="high-contrast"] .map-hint,
+[data-theme] .map-hint {
+    background: #000000;
+    color: #ffff00;
+    border: 2px solid #ffff00;
+}
+
+/* Custom Animated Draft Pin */
+.draft-pin-container {
+    background: none !important;
+    border: none !important;
+}
+
+.draft-pin-wrapper {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+}
+
+.draft-pin-wrapper:active {
+    cursor: grabbing;
+}
+
+.draft-pin-pulse {
+    position: absolute;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(230, 81, 0, 0.35);
+    animation: draftPulse 1.8s infinite ease-out;
+}
+
+[data-theme="high-contrast"] .draft-pin-pulse,
+[data-theme] .draft-pin-pulse {
+    background: rgba(0, 255, 0, 0.4);
+}
+
+@keyframes draftPulse {
+    0% {
+        transform: scale(0.6);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+.draft-pin-marker {
+    position: relative;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    background: #e65100;
+    color: #ffffff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    border: 3px solid #ffffff;
+}
+
+[data-theme="high-contrast"] .draft-pin-marker,
+[data-theme] .draft-pin-marker {
+    background: #ffff00;
+    color: #000000;
+    border: 3px solid #000000;
+}
+
+.draft-pin-inner-icon {
+    transform: rotate(45deg);
+    font-size: 1.1rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.draft-tooltip {
+    background: #2d3436 !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-weight: bold !important;
+    font-size: 0.85rem !important;
+    border: none !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+}
+
+[data-theme="high-contrast"] .draft-tooltip,
+[data-theme] .draft-tooltip {
+    background: #000000 !important;
+    color: #ffff00 !important;
+    border: 2px solid #ffff00 !important;
+}
+
 /* Sidebar */
 .sidebar {
     padding: 1.5rem;
@@ -130,6 +252,51 @@ header {
         overflow-y: auto;
         border-left: 1px solid var(--border);
     }
+}
+
+/* Pin Selection Status Banner in Sidebar */
+.selection-status {
+    background: #fff8e1;
+    border: 2px solid #ffe082;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: #5d4037;
+    font-weight: 500;
+}
+
+.selection-status.is-selected {
+    background: #e8f5e9;
+    border-color: #81c784;
+    color: #1b5e20;
+    font-weight: 600;
+}
+
+[data-theme="high-contrast"] .selection-status,
+[data-theme] .selection-status {
+    background: #000000;
+    border-color: #ffff00;
+    color: #ffff00;
+}
+
+.clear-pin-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.clear-pin-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .form-group {
@@ -175,8 +342,13 @@ input, select {
     border: none;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
     background: var(--accent-hover);
+}
+
+.submit-btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
 }
 
 .secondary-btn {

@@ -73,7 +73,155 @@ function announce(msg) {
     if (el) el.textContent = msg;
 }
 
-// 4. Map Marker Factory with A11y
+// 4. Draft Location Pin Management (A11y, Motor & Cognitive Friendly)
+let draftMarker = null;
+
+function setDraftLocation(lat, lng) {
+    const coordsInput = document.getElementById('coords');
+    if (coordsInput) {
+        coordsInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    // Update Status Banner in Sidebar
+    const statusText = document.getElementById('selection-status-text');
+    const statusContainer = document.getElementById('selection-status');
+    const clearBtn = document.getElementById('clear-pin-btn');
+    if (statusText) {
+        statusText.textContent = `Spot selected! Drag pin to fine-tune.`;
+    }
+    if (statusContainer) {
+        statusContainer.classList.add('is-selected');
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'inline-block';
+    }
+
+    // Update floating map hint
+    const mapHintText = document.getElementById('map-hint-text');
+    if (mapHintText) {
+        mapHintText.textContent = "✅ Pin placed! Drag it to adjust, or complete form to save.";
+    }
+
+    // Create or update the draft marker
+    if (draftMarker) {
+        draftMarker.setLatLng([lat, lng]);
+    } else {
+        const draftIcon = L.divIcon({
+            className: 'draft-pin-container',
+            html: `
+                <div class="draft-pin-wrapper">
+                    <div class="draft-pin-pulse"></div>
+                    <div class="draft-pin-marker" role="img" aria-label="Selected location pin">
+                        <span class="draft-pin-inner-icon">📍</span>
+                    </div>
+                </div>
+            `,
+            iconSize: [48, 48],
+            iconAnchor: [24, 46]
+        });
+
+        draftMarker = L.marker([lat, lng], {
+            icon: draftIcon,
+            draggable: true,
+            zIndexOffset: 1500
+        }).addTo(map);
+
+        draftMarker.bindTooltip("<b>📍 Selected Spot</b><br>Drag to fine-tune position", {
+            permanent: true,
+            direction: "top",
+            offset: [0, -44],
+            className: "draft-tooltip"
+        });
+
+        // Allow users with tremors or touch screens to drag the pin for easy adjustments
+        draftMarker.on('dragend', (e) => {
+            const pos = e.target.getLatLng();
+            if (coordsInput) {
+                coordsInput.value = `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+            }
+            announce(`Pin adjusted to latitude ${pos.lat.toFixed(3)}, longitude ${pos.lng.toFixed(3)}`);
+        });
+    }
+
+    announce(`Pin placed at latitude ${lat.toFixed(3)}, longitude ${lng.toFixed(3)}. You can drag the pin to adjust or complete the form to save.`);
+}
+
+function clearDraftLocation() {
+    if (draftMarker) {
+        map.removeLayer(draftMarker);
+        draftMarker = null;
+    }
+    const coordsInput = document.getElementById('coords');
+    if (coordsInput) coordsInput.value = '';
+
+    const statusText = document.getElementById('selection-status-text');
+    const statusContainer = document.getElementById('selection-status');
+    const clearBtn = document.getElementById('clear-pin-btn');
+    if (statusText) {
+        statusText.textContent = 'No spot selected yet. Tap the map or use the buttons below.';
+    }
+    if (statusContainer) {
+        statusContainer.classList.remove('is-selected');
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+
+    const mapHintText = document.getElementById('map-hint-text');
+    if (mapHintText) {
+        mapHintText.textContent = '💡 Tap or click anywhere on the map to place a pin.';
+    }
+    announce('Selected pin cleared.');
+}
+
+// Map Click Handler: Leaflet only fires this if the user didn't drag/pan the map!
+map.on('click', (e) => {
+    setDraftLocation(e.latlng.lat, e.latlng.lng);
+});
+
+// "Pin Map Center" Button Handler: Super helpful for seniors & motor-impaired users
+const centerPinBtn = document.getElementById('center-pin-btn');
+if (centerPinBtn) {
+    centerPinBtn.addEventListener('click', () => {
+        const center = map.getCenter();
+        setDraftLocation(center.lat, center.lng);
+    });
+}
+
+// "Use Current GPS" Button Handler
+const gpsBtn = document.getElementById('use-gps-btn');
+if (gpsBtn) {
+    gpsBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            announce("Geolocation is not supported by your browser.");
+            alert("Geolocation is not supported by your browser.");
+            return;
+        }
+        announce("Detecting your location...");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                map.setView([lat, lng], 14);
+                setDraftLocation(lat, lng);
+                announce(`GPS position found at ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
+            },
+            () => {
+                announce("Unable to retrieve location. Please click the map instead.");
+                alert("Location access denied or unavailable. Please click the map or use 'Pin Map Center'.");
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    });
+}
+
+// "Clear Pin" Button Handler
+const clearPinBtn = document.getElementById('clear-pin-btn');
+if (clearPinBtn) {
+    clearPinBtn.addEventListener('click', clearDraftLocation);
+}
+
+// 5. Permanent Map Marker Factory with Full Screen-Reader & Keyboard A11y
 function createMarker(id, lat, lng, name, type) {
     const marker = L.marker([lat, lng]).addTo(map);
     const popupContent = `
@@ -112,7 +260,7 @@ function createMarker(id, lat, lng, name, type) {
     return marker;
 }
 
-// 5. Real-Time Sync Store
+// 6. Real-Time Sync Store
 const markersMap = new Map();
 
 function renderLocationsList() {
@@ -184,46 +332,7 @@ onSnapshot(q, (snapshot) => {
     announce("Working with cached offline points.");
 });
 
-// 6. Interaction Logic: Map Click Coordinates
-map.on('click', (e) => {
-    const { lat, lng } = e.latlng;
-    const coordsInput = document.getElementById('coords');
-    if (coordsInput) {
-        coordsInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    }
-    announce(`Coordinates set to ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
-});
-
-// 7. Interaction Logic: GPS Button
-const gpsBtn = document.getElementById('use-gps-btn');
-if (gpsBtn) {
-    gpsBtn.addEventListener('click', () => {
-        if (!navigator.geolocation) {
-            announce("Geolocation is not supported by your browser.");
-            alert("Geolocation is not supported by your browser.");
-            return;
-        }
-        announce("Detecting your location...");
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                const coordsInput = document.getElementById('coords');
-                if (coordsInput) {
-                    coordsInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-                }
-                map.setView([lat, lng], 13);
-                announce(`GPS position found at ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
-            },
-            () => {
-                announce("Unable to retrieve location. Please click the map instead.");
-                alert("Location access denied or unavailable. Please click the map to set coordinates.");
-            }
-        );
-    });
-}
-
-// 8. Interaction Logic: Form Submission Directly to Firestore
+// 7. Interaction Logic: Form Submission Directly to Firestore
 const form = document.getElementById('add-location-form');
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -234,7 +343,7 @@ if (form) {
 
         if (!data.coordinates) {
             announce("Please click on the map or use GPS to set coordinates.");
-            alert("Please click the map or use the GPS button to set coordinates.");
+            alert("Please tap the map or use 'Pin Map Center' / 'Use Current GPS' to set coordinates.");
             return;
         }
 
@@ -260,6 +369,7 @@ if (form) {
 
             announce(`Success! Published ${data.type} "${data.name}" live to everyone's map.`);
             form.reset();
+            clearDraftLocation(); // Clears draft pin now that it's published to the live map!
         } catch (err) {
             console.error("Error saving point to Firestore:", err);
             announce("Error saving location. Check your internet connection.");
@@ -271,7 +381,7 @@ if (form) {
     });
 }
 
-// 9. Interaction Logic: GeoJSON Export
+// 8. Interaction Logic: GeoJSON Export
 const exportBtn = document.getElementById('export-btn');
 if (exportBtn) {
     exportBtn.addEventListener('click', () => {
@@ -305,7 +415,7 @@ if (exportBtn) {
     });
 }
 
-// 10. Theme Toggle
+// 9. Theme Toggle
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
     themeToggle.addEventListener('click', () => {
@@ -315,7 +425,7 @@ if (themeToggle) {
     });
 }
 
-// 11. Service Worker for Wilderness Offline Caching
+// 10. Service Worker for Wilderness Offline Caching
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
 }
