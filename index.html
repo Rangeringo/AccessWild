@@ -3,38 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AccessWild | Inclusive Outdoor Mapping</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>AccessWild | Inclusive Nature Mapping</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header role="banner">
-    <div class="header-content">
-        <h1>AccessWild</h1>
-        <button id="theme-toggle" aria-pressed="false">Toggle High Contrast</button>
-    </div>
-</header>
+
+    <header role="banner">
+        <div class="header-content">
+            <h1>AccessWild</h1>
+            <button id="theme-toggle" aria-pressed="false">Toggle High Contrast</button>
+        </div>
+    </header>
 
     <main class="app-container">
+        <!-- MAP SECTION -->
         <section id="map-section" aria-label="Interactive Map">
-            <div id="map" role="application" aria-label="Outdoor accessibility map"></div>
+            <div id="map" role="application" aria-label="Map showing accessible recreation points"></div>
         </section>
 
-        <aside id="sidebar" class="sidebar">
-            <section id="controls" aria-labelledby="filter-heading">
-                <h2 id="filter-heading">Search & Filters</h2>
-                <!-- Step 3 Content will go here -->
+        <!-- DATA & SEARCH SIDEBAR -->
+        <aside class="sidebar">
+            <section id="form-container" aria-labelledby="form-heading">
+                <h2 id="form-heading">Add Accessible Point</h2>
+                <form id="add-location-form">
+                    <div class="form-group">
+                        <label for="loc-name">Location Name</label>
+                        <input type="text" id="loc-name" name="name" required aria-required="true" placeholder="e.g. South Fork Campground">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loc-type">Facility Type</label>
+                        <select id="loc-type" name="type">
+                            <option value="Restroom">Accessible Restroom</option>
+                            <option value="Trail">Level Trail</option>
+                            <option value="Parking">Reserved Parking</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coords">Coordinates</label>
+                        <input type="text" id="coords" name="coordinates" readonly placeholder="Click map to set location">
+                    </div>
+
+                    <button type="submit" class="submit-btn">Save Location</button>
+                </form>
             </section>
-            
-            <section id="announcements" class="sr-only" aria-live="polite"></section>
         </aside>
     </main>
 
-    <footer role="contentinfo">
-        <p>&copy; 2023 AccessWild Project. Data provided by BLM.</p>
-    </footer>
+    <!-- Screen Reader Announcement Area -->
+    <div id="announcements" class="sr-only" aria-live="polite"></div>
 
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
 </body>

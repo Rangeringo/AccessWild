@@ -1,54 +1,45 @@
-/* 
-   ACCESSWILD DESIGN SYSTEM
-   Supports: High-Contrast Mode, Mobile-First Responsiveness, 
-   Keyboard Navigation, and Leaflet Map Rendering.
-*/
-
 :root {
-    /* Color Tokens */
     --bg: #f4f7f6;
     --panel-bg: #ffffff;
     --text: #2d3436;
-    --accent: #2d6a4f; /* Nature Green */
-    --focus: #d35400;  /* High-vis Orange focus ring */
-    --target-size: 48px; /* ADA recommended touch target */
+    --accent: #2d6a4f;
+    --focus: #d35400;
+    --target-size: 48px;
 }
 
-/* HIGH CONTRAST THEME OVERRIDES (Step 1) */
-[data-theme="high-contrast"] {
+[data-theme="high-contrast"],
+[data-theme] {
     --bg: #000000;
     --panel-bg: #000000;
-    --text: #ffff00; /* High-visibility yellow */
+    --text: #ffff00;
     --accent: #ffffff;
-    --focus: #00ff00; /* Neon green focus ring */
+    --focus: #00ff00;
 }
 
-/* CORE LAYOUT */
 html, body {
     height: 100%;
     margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: system-ui, sans-serif;
     background: var(--bg);
     color: var(--text);
 }
 
-/* HEADER SECTION (Updated for Spacing/Padding) */
 header {
     background: var(--accent);
     color: white;
     padding: 1.2rem 1.5rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-[data-theme="high-contrast"] header {
+[data-theme="high-contrast"] header,
+[data-theme] header {
     background: #000;
     border-bottom: 2px solid #fff;
 }
 
 .header-content {
     display: flex;
-    flex-direction: column; /* Stacked on mobile */
-    gap: 1.2rem;            /* Space between name and button */
+    flex-direction: column;
+    gap: 1.2rem;
     align-items: flex-start;
     max-width: 1400px;
     margin: 0 auto;
@@ -56,21 +47,13 @@ header {
 
 @media (min-width: 480px) {
     .header-content {
-        flex-direction: row; /* Side-by-side on tablet/desktop */
+        flex-direction: row;
         justify-content: space-between;
         align-items: center;
     }
 }
 
-h1 {
-    margin: 0;
-    font-size: 1.6rem;
-    letter-spacing: 0.02rem;
-}
-
-/* ACCESSIBILITY TOGGLE BUTTON */
 #theme-toggle {
-    width: auto;
     padding: 0.6rem 1.2rem;
     cursor: pointer;
     background: rgba(255, 255, 255, 0.15);
@@ -78,68 +61,31 @@ h1 {
     border: 2px solid white;
     border-radius: 6px;
     font-weight: bold;
-    white-space: nowrap;
-    transition: background 0.2s;
+    min-height: var(--target-size);
 }
 
-#theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-[data-theme="high-contrast"] #theme-toggle {
-    background: #ffff00;
-    color: #000;
-    border-color: #ffff00;
-}
-
-/* APP CONTAINER & SIDEBAR */
 .app-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 85px); /* Adjusts for header height */
+    height: calc(100vh - 85px);
 }
 
 #map { 
-    height: 500px; /* Fixed height for mobile to prevent grey box collapse */
+    height: 400px; 
     width: 100%; 
     background-color: #e5e3df; 
-    z-index: 1;
 }
 
-.sidebar { 
-    padding: 1.5rem; 
-    overflow-y: auto; 
-    background: var(--panel-bg);
-}
-
-/* DESKTOP SPLIT-PANE LAYOUT */
 @media (min-width: 1024px) {
     .app-container { flex-direction: row; }
     #map { height: 100%; width: 70%; }
     .sidebar { width: 30%; border-left: 1px solid #ccc; }
 }
 
-/* FORM STYLING (Step 3) */
+.sidebar { padding: 1.5rem; overflow-y: auto; background: var(--panel-bg); }
 .form-group { margin-bottom: 1.2rem; }
-
-label { 
-    display: block; 
-    margin-bottom: 0.5rem; 
-    font-weight: bold; 
-    color: var(--text);
-}
-
-input, select {
-    width: 100%;
-    min-height: var(--target-size);
-    border: 2px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
-    padding: 0.5rem;
-    box-sizing: border-box; /* Prevents inputs from overflowing */
-    background: white;
-    color: black;
-}
+label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+input, select { width: 100%; min-height: var(--target-size); border: 2px solid #ccc; border-radius: 6px; padding: 0.5rem; box-sizing: border-box; }
 
 .submit-btn {
     width: 100%;
@@ -147,24 +93,22 @@ input, select {
     background: var(--accent);
     color: white;
     border: none;
-    border-radius: 6px;
     font-weight: bold;
-    font-size: 1.1rem;
     cursor: pointer;
-    margin-top: 1rem;
+    border-radius: 6px;
 }
 
-.submit-btn:hover {
-    filter: brightness(1.2);
+[data-theme="high-contrast"] .submit-btn,
+[data-theme] .submit-btn {
+    background: #ffff00;
+    color: #000;
 }
 
-/* FOCUS STATES (Step 1 Accessibility) */
 *:focus {
     outline: 4px solid var(--focus) !important;
     outline-offset: 2px;
 }
 
-/* UTILITIES */
 .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0;
     margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
