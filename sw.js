@@ -1,4 +1,4 @@
-const CACHE_NAME = 'accesswild-v1';
+const CACHE_NAME = 'accesswild-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -9,9 +9,25 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+    e.waitUntil(
+        caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    );
+});
+
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then(keys => Promise.all(
+            keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        )).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', (e) => {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    // Let Firestore handle its own live network and IndexedDB offline persistence
+    if (e.request.url.includes('firestore.googleapis.com') || e.request.url.includes('googleapis.com')) {
+        return;
+    }
+    e.respondWith(
+        caches.match(e.request).then(cached => cached || fetch(e.request))
+    );
 });

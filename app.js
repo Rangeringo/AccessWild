@@ -1,5 +1,46 @@
-// 1. Initialize Map
-// scrollWheelZoom: false prevents scroll hijacking when scrolling down the page
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    onSnapshot, 
+    query, 
+    orderBy, 
+    serverTimestamp,
+    enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// 1. Firebase Configuration (AccessWild project in nam5 multi-region)
+const firebaseConfig = {
+    projectId: "accesswild",
+    appId: "1:1013816605246:web:3786196e25f15dd23c6f6f",
+    storageBucket: "accesswild.firebasestorage.app",
+    apiKey: "AIzaSyCv_wsjDii-j_oMJfVa-Mv8VrBH-0OitMg",
+    authDomain: "accesswild.firebaseapp.com",
+    messagingSenderId: "1013816605246",
+    measurementId: "G-CJ8Q3DSHY1"
+};
+
+// Initialize Firebase & Cloud Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const locationsCol = collection(db, "locations");
+
+// Enable offline caching for low-signal wilderness use
+try {
+    enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+            console.warn("Firestore offline persistence: multiple tabs open.");
+        } else if (err.code === 'unimplemented') {
+            console.warn("Browser does not support Firestore offline persistence.");
+        }
+    });
+} catch (e) {
+    console.warn("Persistence init note:", e);
+}
+
+// 2. Initialize Leaflet Map
+// scrollWheelZoom: false avoids scroll hijacking during page scrolling
 const map = L.map('map', { 
     tap: false,
     scrollWheelZoom: false 
@@ -14,7 +55,7 @@ map.on('focus', () => map.scrollWheelZoom.enable());
 map.on('click', () => map.scrollWheelZoom.enable());
 map.on('mouseout', () => map.scrollWheelZoom.disable());
 
-// Robust map invalidation using ResizeObserver (solves the desktop F12 / blank map issue)
+// Robust map sizing via ResizeObserver (cures desktop F12 / blank map issue permanently)
 const mapEl = document.getElementById('map');
 if (window.ResizeObserver && mapEl) {
     const ro = new ResizeObserver(() => {
@@ -23,29 +64,25 @@ if (window.ResizeObserver && mapEl) {
     ro.observe(mapEl);
 }
 window.addEventListener('load', () => map.invalidateSize());
-document.addEventListener('DOMContentLoaded', () => map.invalidateSize());
-setTimeout(() => map.invalidateSize(), 100);
-setTimeout(() => map.invalidateSize(), 400);
+setTimeout(() => map.invalidateSize(), 150);
+setTimeout(() => map.invalidateSize(), 500);
 
-// 2. Screen Reader Announcer
+// 3. Screen Reader Announcer
 function announce(msg) {
     const el = document.getElementById('announcements');
     if (el) el.textContent = msg;
 }
 
-// 3. State & Marker Store
-const markers = [];
-const allPoints = [];
-
-function addPoint(lat, lng, name, type, isCustom = false) {
+// 4. Map Marker Factory with A11y
+function createMarker(id, lat, lng, name, type) {
     const marker = L.marker([lat, lng]).addTo(map);
     const popupContent = `
-        <div style="font-family: inherit;">
+        <div style="font-family: inherit; min-width: 160px;">
             <strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">${name}</strong>
             <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem;">
                 ${type}
             </span>
-            <div style="font-size: 0.8rem; margin-top: 6px; color: #555;">
+            <div style="font-size: 0.8rem; margin-top: 6px; color: #666;">
                 Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}
             </div>
         </div>
@@ -66,29 +103,28 @@ function addPoint(lat, lng, name, type, isCustom = false) {
             });
         }
     };
+
     marker.on('add', setupMarkerA11y);
     if (marker._icon) {
         setupMarkerA11y();
     }
 
-    const pointObj = { lat, lng, name, type, isCustom, marker };
-    markers.push(marker);
-    allPoints.push(pointObj);
-
-    renderLocationsList();
     return marker;
 }
 
-// 4. Render Accessible Locations in Sidebar
+// 5. Real-Time Sync Store
+const markersMap = new Map();
+
 function renderLocationsList() {
     const listEl = document.getElementById('locations-list');
     const countEl = document.getElementById('points-count');
     if (!listEl) return;
 
     listEl.innerHTML = '';
-    if (countEl) countEl.textContent = allPoints.length;
+    const pointsArray = Array.from(markersMap.values());
+    if (countEl) countEl.textContent = pointsArray.length;
 
-    allPoints.forEach((p) => {
+    pointsArray.forEach((p) => {
         const li = document.createElement('li');
         li.className = 'location-item';
         li.innerHTML = `
@@ -111,7 +147,44 @@ function renderLocationsList() {
     });
 }
 
-// 5. Interaction Logic: Map Click
+// Subscribe to Live Crowdsourced Firestore Updates
+const q = query(locationsCol, orderBy("createdAt", "desc"));
+onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+        const doc = change.doc;
+        const data = doc.data();
+        const id = doc.id;
+
+        if (change.type === "added") {
+            if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other");
+                markersMap.set(id, { ...data, id, marker });
+            }
+        }
+        if (change.type === "removed") {
+            if (markersMap.has(id)) {
+                const item = markersMap.get(id);
+                map.removeLayer(item.marker);
+                markersMap.delete(id);
+            }
+        }
+        if (change.type === "modified") {
+            if (markersMap.has(id)) {
+                const item = markersMap.get(id);
+                map.removeLayer(item.marker);
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other");
+                markersMap.set(id, { ...data, id, marker });
+            }
+        }
+    });
+
+    renderLocationsList();
+}, (error) => {
+    console.error("Firestore real-time sync error:", error);
+    announce("Working with cached offline points.");
+});
+
+// 6. Interaction Logic: Map Click Coordinates
 map.on('click', (e) => {
     const { lat, lng } = e.latlng;
     const coordsInput = document.getElementById('coords');
@@ -121,7 +194,7 @@ map.on('click', (e) => {
     announce(`Coordinates set to ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
 });
 
-// 6. Interaction Logic: GPS Button
+// 7. Interaction Logic: GPS Button
 const gpsBtn = document.getElementById('use-gps-btn');
 if (gpsBtn) {
     gpsBtn.addEventListener('click', () => {
@@ -150,63 +223,71 @@ if (gpsBtn) {
     });
 }
 
-// 7. Interaction Logic: Form Submission with localStorage Persistence
+// 8. Interaction Logic: Form Submission Directly to Firestore
 const form = document.getElementById('add-location-form');
 if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fd = new FormData(e.target);
+        const submitBtn = form.querySelector('.submit-btn');
+        const fd = new FormData(form);
         const data = Object.fromEntries(fd);
 
-        if (data.coordinates) {
-            const [lat, lng] = data.coordinates.split(',').map(s => parseFloat(s.trim()));
-            if (!isNaN(lat) && !isNaN(lng)) {
-                addPoint(lat, lng, data.name, data.type, true);
-                saveCustomPoint({ lat, lng, name: data.name, type: data.type });
-                announce(`Success! Saved ${data.type} "${data.name}" to your map.`);
-            } else {
-                announce("Error: Invalid coordinates. Please click on the map.");
-            }
+        if (!data.coordinates) {
+            announce("Please click on the map or use GPS to set coordinates.");
+            alert("Please click the map or use the GPS button to set coordinates.");
+            return;
         }
-        e.target.reset();
+
+        const [lat, lng] = data.coordinates.split(',').map(s => parseFloat(s.trim()));
+        if (isNaN(lat) || isNaN(lng)) {
+            announce("Invalid coordinates format.");
+            alert("Coordinates must be in 'latitude, longitude' format.");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = "Publishing to Live Map...";
+
+        try {
+            await addDoc(locationsCol, {
+                name: data.name.trim(),
+                type: data.type,
+                lat: lat,
+                lng: lng,
+                createdAt: serverTimestamp()
+            });
+
+            announce(`Success! Published ${data.type} "${data.name}" live to everyone's map.`);
+            form.reset();
+        } catch (err) {
+            console.error("Error saving point to Firestore:", err);
+            announce("Error saving location. Check your internet connection.");
+            alert("Could not save to live database: " + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
     });
 }
 
-function saveCustomPoint(point) {
-    try {
-        const saved = JSON.parse(localStorage.getItem('accesswild_custom_points') || '[]');
-        saved.push(point);
-        localStorage.setItem('accesswild_custom_points', JSON.stringify(saved));
-    } catch (err) {
-        console.error("Could not save to localStorage", err);
-    }
-}
-
-function loadCustomPoints() {
-    try {
-        const saved = JSON.parse(localStorage.getItem('accesswild_custom_points') || '[]');
-        saved.forEach(p => addPoint(p.lat, p.lng, p.name, p.type, true));
-    } catch (err) {
-        console.error("Could not load from localStorage", err);
-    }
-}
-
-// 8. Interaction Logic: GeoJSON Export
+// 9. Interaction Logic: GeoJSON Export
 const exportBtn = document.getElementById('export-btn');
 if (exportBtn) {
     exportBtn.addEventListener('click', () => {
+        const pointsArray = Array.from(markersMap.values());
         const geojson = {
             type: "FeatureCollection",
-            features: allPoints.map(p => ({
+            features: pointsArray.map(p => ({
                 type: "Feature",
                 geometry: {
                     type: "Point",
                     coordinates: [p.lng, p.lat]
                 },
                 properties: {
+                    id: p.id,
                     name: p.name,
-                    type: p.type,
-                    isCustom: p.isCustom
+                    type: p.type
                 }
             }))
         };
@@ -224,7 +305,7 @@ if (exportBtn) {
     });
 }
 
-// 9. Theme Toggle
+// 10. Theme Toggle
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
     themeToggle.addEventListener('click', () => {
@@ -234,17 +315,7 @@ if (themeToggle) {
     });
 }
 
-// 10. Initial Seed Data & Load Saved Points
-const defaultPoints = [
-    { lat: 37.7749, lng: -122.4194, name: "Golden Gate Park Paved Trail", type: "Trail" },
-    { lat: 39.7392, lng: -104.9903, name: "City Park Accessible Restroom", type: "Restroom" },
-    { lat: 47.6062, lng: -122.3321, name: "Discovery Park Reserved Parking", type: "Parking" },
-    { lat: 39.0968, lng: -120.0324, name: "Emerald Bay Overlook", type: "Overlook" }
-];
-defaultPoints.forEach(p => addPoint(p.lat, p.lng, p.name, p.type, false));
-loadCustomPoints();
-
-// 11. Service Worker
+// 11. Service Worker for Wilderness Offline Caching
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
 }

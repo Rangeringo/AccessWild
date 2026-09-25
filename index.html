@@ -59,12 +59,12 @@
             <!-- ACCESSIBLE LOCATIONS DIRECTORY -->
             <section class="locations-container" aria-labelledby="locations-heading">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 id="locations-heading" style="margin: 0; font-size: 1.25rem;">Accessible Points (<span id="points-count">0</span>)</h2>
+                    <h2 id="locations-heading" style="margin: 0; font-size: 1.25rem;">Live Points (<span id="points-count">0</span>)</h2>
                     <button type="button" id="export-btn" class="secondary-btn" style="width: auto; min-height: 36px; padding: 0.3rem 0.8rem; font-size: 0.85rem;">Export GeoJSON</button>
                 </div>
-                <p id="list-instructions" style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.85;">Select a location to pan the map and view accessibility details.</p>
+                <p id="list-instructions" style="font-size: 0.85rem; margin-top: 0.4rem; opacity: 0.85;">⚡ Powered by Cloud Firestore. Updates sync live across all visitors.</p>
                 <ul id="locations-list" class="locations-list" role="list">
-                    <!-- Populated dynamically -->
+                    <!-- Populated dynamically via Firebase onSnapshot -->
                 </ul>
             </section>
         </aside>
@@ -75,6 +75,7 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+    <!-- Modular App Script with Firebase SDK -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
