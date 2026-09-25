@@ -10,6 +10,7 @@
     --danger: #c0392b;
     --danger-hover: #962d22;
     --warning: #f39c12;
+    --admin-gold: #ffb300;
 }
 
 [data-theme="high-contrast"],
@@ -24,6 +25,7 @@
     --danger: #ff5555;
     --danger-hover: #ff0000;
     --warning: #ffff00;
+    --admin-gold: #ffff00;
 }
 
 html, body {
@@ -37,7 +39,7 @@ html, body {
 header {
     background: var(--accent);
     color: white;
-    padding: 1rem 1.5rem;
+    padding: 0.85rem 1.5rem;
 }
 
 [data-theme="high-contrast"] header,
@@ -55,7 +57,7 @@ header {
     margin: 0 auto;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 580px) {
     .header-content {
         flex-direction: row;
         justify-content: space-between;
@@ -65,11 +67,18 @@ header {
 
 .header-content h1 {
     margin: 0;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
 }
 
-#theme-toggle {
-    padding: 0.6rem 1.2rem;
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+#theme-toggle, #admin-btn {
+    padding: 0.5rem 1rem;
     cursor: pointer;
     background: rgba(255, 255, 255, 0.15);
     color: white;
@@ -77,6 +86,22 @@ header {
     border-radius: 6px;
     font-weight: bold;
     min-height: var(--target-size);
+    font-size: 0.95rem;
+}
+
+#admin-btn.is-admin {
+    background: var(--admin-gold);
+    color: #000000;
+    border-color: #ffa000;
+}
+
+[data-theme="high-contrast"] #theme-toggle,
+[data-theme="high-contrast"] #admin-btn,
+[data-theme] #theme-toggle,
+[data-theme] #admin-btn {
+    background: #000000;
+    color: #ffff00;
+    border-color: #ffff00;
 }
 
 /* Mobile-first: App Container */
@@ -90,8 +115,8 @@ header {
 #map-section {
     position: relative;
     width: 100%;
-    height: 48vh;
-    min-height: 320px;
+    height: 50vh;
+    min-height: 340px;
     flex-shrink: 0;
 }
 
@@ -117,7 +142,7 @@ header {
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
     pointer-events: none;
     text-align: center;
-    max-width: 85%;
+    max-width: 80%;
     transition: all 0.3s ease;
 }
 
@@ -131,26 +156,26 @@ header {
 /* Locate Me Map Button (Target Icon) */
 .map-locate-btn {
     position: absolute;
-    top: 12px;
+    bottom: 24px;
     right: 14px;
     z-index: 1000;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     background: #ffffff;
     color: #1976d2;
     border: 2px solid #ccc;
     border-radius: 50%;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
     transition: transform 0.15s, background-color 0.15s;
 }
 
 .map-locate-btn:hover {
-    transform: scale(1.05);
+    transform: scale(1.06);
     background: #f0f7ff;
 }
 
@@ -161,7 +186,32 @@ header {
     border: 2px solid #ffff00;
 }
 
-/* Gesture Handling Overlay (Like Google Maps) */
+/* Leaflet Layer Control Styling */
+.leaflet-control-layers {
+    border: 2px solid var(--border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25) !important;
+    font-family: inherit !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+    background: var(--panel-bg) !important;
+    color: var(--text) !important;
+}
+
+[data-theme="high-contrast"] .leaflet-control-layers,
+[data-theme] .leaflet-control-layers {
+    background: #000000 !important;
+    color: #ffff00 !important;
+    border-color: #ffff00 !important;
+}
+
+.leaflet-control-layers-toggle {
+    width: 44px !important;
+    height: 44px !important;
+}
+
+/* Gesture Handling Overlay */
 .gesture-overlay {
     position: absolute;
     inset: 0;
@@ -216,14 +266,8 @@ header {
 }
 
 @keyframes bluePulse {
-    0% {
-        transform: scale(0.6);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.8);
-        opacity: 0;
-    }
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
 }
 
 .blue-dot {
@@ -259,9 +303,7 @@ header {
     cursor: grab;
 }
 
-.draft-pin-wrapper:active {
-    cursor: grabbing;
-}
+.draft-pin-wrapper:active { cursor: grabbing; }
 
 .draft-pin-pulse {
     position: absolute;
@@ -278,14 +320,8 @@ header {
 }
 
 @keyframes draftPulse {
-    0% {
-        transform: scale(0.6);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.6);
-        opacity: 0;
-    }
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
 }
 
 .draft-pin-marker {
@@ -385,9 +421,7 @@ header {
     font-size: 0.85rem;
 }
 
-.undo-banner button:hover {
-    background: var(--danger-hover);
-}
+.undo-banner button:hover { background: var(--danger-hover); }
 
 [data-theme="high-contrast"] .undo-banner,
 [data-theme] .undo-banner {
@@ -465,9 +499,7 @@ header {
     color: inherit;
 }
 
-.clear-pin-btn:hover {
-    background: rgba(0, 0, 0, 0.08);
-}
+.clear-pin-btn:hover { background: rgba(0, 0, 0, 0.08); }
 
 .danger-btn {
     background: rgba(192, 57, 43, 0.1);
@@ -544,9 +576,7 @@ input, select, textarea {
     border: none;
 }
 
-.submit-btn:hover:not(:disabled) {
-    background: var(--accent-hover);
-}
+.submit-btn:hover:not(:disabled) { background: var(--accent-hover); }
 
 .submit-btn:disabled {
     opacity: 0.65;
@@ -559,9 +589,7 @@ input, select, textarea {
     border: 2px solid var(--border);
 }
 
-.secondary-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
+.secondary-btn:hover { background: rgba(0, 0, 0, 0.05); }
 
 .cancel-btn {
     background: transparent;
@@ -570,9 +598,7 @@ input, select, textarea {
     margin-top: 0.5rem;
 }
 
-.cancel-btn:hover {
-    background: rgba(192, 57, 43, 0.08);
-}
+.cancel-btn:hover { background: rgba(192, 57, 43, 0.08); }
 
 [data-theme="high-contrast"] .submit-btn,
 [data-theme] .submit-btn {
@@ -633,7 +659,7 @@ input, select, textarea {
 }
 
 .location-item strong {
-    display: block;
+    display: inline-block;
     font-size: 1.05rem;
 }
 
@@ -648,6 +674,45 @@ input, select, textarea {
     font-weight: bold;
 }
 
+/* Status Badges */
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #e8f5e9;
+    color: #1b5e20;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+.flagged-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #ffebee;
+    color: #c62828;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+[data-theme="high-contrast"] .verified-badge,
+[data-theme] .verified-badge {
+    background: #00ff00;
+    color: #000000;
+}
+
+[data-theme="high-contrast"] .flagged-warning,
+[data-theme] .flagged-warning {
+    background: #ff5555;
+    color: #000000;
+}
+
 .location-notes {
     font-size: 0.9rem;
     color: #444;
@@ -659,9 +724,9 @@ input, select, textarea {
 
 [data-theme="high-contrast"] .location-notes,
 [data-theme] .location-notes {
-    background: #111;
+    background: #111111;
     color: #ffff00;
-    border: 1px solid #333;
+    border: 1px solid #333333;
 }
 
 [data-theme="high-contrast"] .location-tag,
@@ -678,7 +743,7 @@ input, select, textarea {
     margin-top: 0.3rem;
 }
 
-.view-btn, .edit-btn, .delete-btn, .report-btn {
+.view-btn, .edit-btn, .delete-btn, .report-btn, .verify-btn {
     min-height: 38px;
     padding: 0.35rem 0.75rem;
     background: transparent;
@@ -690,27 +755,28 @@ input, select, textarea {
     color: var(--text);
 }
 
-.view-btn:hover {
-    background: rgba(45, 106, 79, 0.1);
-}
+.view-btn:hover { background: rgba(45, 106, 79, 0.1); }
 
 .edit-btn {
     border-color: #1976d2;
     color: #1976d2;
 }
 
-.edit-btn:hover {
-    background: rgba(25, 118, 210, 0.1);
-}
+.edit-btn:hover { background: rgba(25, 118, 210, 0.1); }
 
 .delete-btn {
     border-color: var(--danger);
     color: var(--danger);
 }
 
-.delete-btn:hover {
-    background: rgba(192, 57, 43, 0.1);
+.delete-btn:hover { background: rgba(192, 57, 43, 0.1); }
+
+.verify-btn {
+    border-color: #2e7d32;
+    color: #2e7d32;
 }
+
+.verify-btn:hover { background: rgba(46, 125, 50, 0.1); }
 
 .report-btn {
     border-color: #7f8c8d;
@@ -733,6 +799,12 @@ input, select, textarea {
 [data-theme] .edit-btn {
     border-color: #00ffff;
     color: #00ffff;
+}
+
+[data-theme="high-contrast"] .verify-btn,
+[data-theme] .verify-btn {
+    border-color: #00ff00;
+    color: #00ff00;
 }
 
 [data-theme="high-contrast"] .delete-btn,

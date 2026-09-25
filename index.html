@@ -13,7 +13,10 @@
     <header role="banner">
         <div class="header-content">
             <h1>AccessWild 🌲♿</h1>
-            <button id="theme-toggle" aria-pressed="false">Toggle High Contrast</button>
+            <div class="header-actions">
+                <button id="admin-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🛡️ Admin</button>
+                <button id="theme-toggle" aria-pressed="false">Toggle High Contrast</button>
+            </div>
         </div>
     </header>
 
@@ -74,7 +77,7 @@
                             <option value="Restroom">Accessible Restroom</option>
                             <option value="Rest Stop">Highway Rest Stop / Gas Station</option>
                             <option value="Trail">Level Trail</option>
-                            <option value="Parking">Reserved Parking</option>
+                            <option value="Accessible Parking">Accessible Parking</option>
                             <option value="Overlook">Accessible Viewpoint / Overlook</option>
                             <option value="Business">Accessible Business / Diner / Store</option>
                         </select>
@@ -90,7 +93,7 @@
 
                     <div class="form-group">
                         <label for="loc-notes">Accessibility Features & Notes (Optional)</label>
-                        <textarea id="loc-notes" name="notes" rows="2" placeholder="e.g. Paved path, grab bars, roll-in stall, wheelchair ramp..."></textarea>
+                        <textarea id="loc-notes" name="notes" rows="2" placeholder="e.g. Ramp access, wide doors, paved asphalt, grab bars..."></textarea>
                     </div>
 
                     <!-- Easy Buttons: Motor/Cognitive Accessible -->

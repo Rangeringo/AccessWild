@@ -42,16 +42,103 @@ try {
     console.warn("Persistence init note:", e);
 }
 
-// 2. Initialize Leaflet Map
+// 2. Client Device Identity (Prevents Trolls from Deleting Others' Submissions)
+let myClientId = localStorage.getItem('accesswild_client_id');
+if (!myClientId) {
+    myClientId = 'usr_' + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem('accesswild_client_id', myClientId);
+}
+
+// 3. Admin Authentication & Moderation System
+let isAdmin = localStorage.getItem('accesswild_is_admin') === 'true';
+const ADMIN_PASSCODE = "accesswild2026"; // Default secure override passcode
+
+const adminBtn = document.getElementById('admin-btn');
+function updateAdminUI() {
+    if (!adminBtn) return;
+    if (isAdmin) {
+        adminBtn.textContent = "🛡️ Admin: Active";
+        adminBtn.classList.add('is-admin');
+        adminBtn.title = "Click to log out of Admin Mode";
+    } else {
+        adminBtn.textContent = "🛡️ Admin";
+        adminBtn.classList.remove('is-admin');
+        adminBtn.title = "Click to enter Admin Mode";
+    }
+}
+updateAdminUI();
+
+if (adminBtn) {
+    adminBtn.addEventListener('click', () => {
+        if (isAdmin) {
+            const logout = confirm("You are currently in Admin Mode. Log out?");
+            if (logout) {
+                isAdmin = false;
+                localStorage.removeItem('accesswild_is_admin');
+                updateAdminUI();
+                renderLocationsList();
+                refreshAllMarkers();
+                announce("Logged out of Admin Mode.");
+            }
+        } else {
+            const code = prompt("🛡️ Admin Moderation Access\nEnter your Admin Passcode to enable full moderation, veto, and verification powers:");
+            if (code && code.trim() === ADMIN_PASSCODE) {
+                isAdmin = true;
+                localStorage.setItem('accesswild_is_admin', 'true');
+                updateAdminUI();
+                renderLocationsList();
+                refreshAllMarkers();
+                announce("Admin Mode activated. You have full moderation and veto permissions.");
+                alert("🛡️ Admin Mode Activated!\nYou can now verify locations, view flag reports, and veto/delete any inappropriate submission.");
+            } else if (code !== null) {
+                alert("Incorrect passcode.");
+            }
+        }
+    });
+}
+
+// 4. Free Map Tile Layers (Streets, Satellite, Topo Trails & Labels)
+const osmStreets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+});
+
+const satelliteImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Tiles © <a href="https://www.esri.com" target="_blank">Esri</a>, Maxar, Earthstar Geographics'
+});
+
+const outdoorTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: 'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Style: © <a href="https://opentopomap.org">OpenTopoMap</a>'
+});
+
+// Overlay Layer: Trailheads, Parks & Place Names (Completely Free)
+const placeLabelsOverlay = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Labels © Esri'
+});
+
+// Initialize Leaflet Map with Streets & Labels
 const map = L.map('map', { 
+    layers: [osmStreets, placeLabelsOverlay],
     tap: false,
-    scrollWheelZoom: false, // Controlled via Ctrl + Scroll gesture handler below
+    scrollWheelZoom: false,
     touchZoom: true
 }).setView([39.8283, -98.5795], 4);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-}).addTo(map);
+// Map Layer Switcher Control
+const baseLayers = {
+    "🗺️ Streets": osmStreets,
+    "🛰️ Satellite": satelliteImagery,
+    "⛰️ Outdoor Topo & Trails": outdoorTopo
+};
+
+const overlayLayers = {
+    "🏷️ Place & Trail Labels": placeLabelsOverlay
+};
+
+L.control.layers(baseLayers, overlayLayers, { position: 'topright' }).addTo(map);
 
 // Robust map sizing via ResizeObserver
 const mapEl = document.getElementById('map');
@@ -65,13 +152,13 @@ window.addEventListener('load', () => map.invalidateSize());
 setTimeout(() => map.invalidateSize(), 150);
 setTimeout(() => map.invalidateSize(), 500);
 
-// 3. Screen Reader Announcer
+// 5. Screen Reader Announcer
 function announce(msg) {
     const el = document.getElementById('announcements');
     if (el) el.textContent = msg;
 }
 
-// 4. Gesture Handling: Ctrl + Scroll on Desktop & Two-Finger Pan on Mobile
+// 6. Gesture Handling: Ctrl + Scroll on Desktop & Two-Finger Pan on Mobile
 const gestureOverlay = document.getElementById('gesture-overlay');
 const gestureText = document.getElementById('gesture-overlay-text');
 let gestureTimeout = null;
@@ -116,7 +203,7 @@ mapEl.addEventListener('touchend', () => {
     map.dragging.enable();
 }, { passive: true });
 
-// 5. User Current Location (Pulsing Blue Dot)
+// 7. User Current Location (Pulsing Blue Dot)
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 
@@ -203,7 +290,7 @@ if (gpsBtn) {
     gpsBtn.addEventListener('click', () => locateUser(true, true));
 }
 
-// 6. Smart Reverse Geocoding & Auto-Naming (OpenStreetMap Nominatim)
+// 8. Smart Reverse Geocoding & Auto-Naming (OpenStreetMap Nominatim)
 let isUserTypingCustomName = false;
 let lastAutoSuggestedName = '';
 
@@ -271,8 +358,8 @@ async function suggestLocationName(lat, lng, type) {
             suggested = `${landmark} Rest Area & Services`;
         } else if (type === "Trail") {
             suggested = landmark.toLowerCase().includes("trail") ? landmark : `${landmark} Level Trail`;
-        } else if (type === "Parking") {
-            suggested = `${landmark} Reserved Parking`;
+        } else if (type === "Accessible Parking" || type === "Parking") {
+            suggested = `${landmark} Accessible Parking`;
         } else if (type === "Overlook") {
             suggested = `${landmark} Viewpoint`;
         } else if (type === "Business") {
@@ -301,7 +388,7 @@ async function suggestLocationName(lat, lng, type) {
 // Profanity / Inappropriate Content Filter
 const vulgarWords = ['shit', 'fuck', 'bitch', 'crap', 'ass', 'dick', 'pussy', 'nigger', 'faggot', 'bastard', 'cock'];
 
-function validateRespectfulName(name, type) {
+function validateRespectfulName(name) {
     const lower = name.toLowerCase();
     for (const bad of vulgarWords) {
         const regex = new RegExp(`\\b${bad}\\b`, 'i');
@@ -313,11 +400,10 @@ function validateRespectfulName(name, type) {
         }
     }
 
-    let formatted = name.trim();
-    return { valid: true, formatted };
+    return { valid: true, formatted: name.trim() };
 }
 
-// 7. Draft Pin Management & Removal (Accidental Pin Protection)
+// 9. Draft Pin Management & Removal (Accidental Pin Protection)
 let draftMarker = null;
 
 function setDraftLocation(lat, lng) {
@@ -326,7 +412,6 @@ function setDraftLocation(lat, lng) {
         coordsInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     }
 
-    // Show Remove buttons in sidebar
     const statusText = document.getElementById('selection-status-text');
     const statusContainer = document.getElementById('selection-status');
     const clearBtn = document.getElementById('clear-pin-btn');
@@ -344,17 +429,14 @@ function setDraftLocation(lat, lng) {
         removeFormBtn.style.display = 'inline-flex';
     }
 
-    // Update map hint
     const mapHintText = document.getElementById('map-hint-text');
     if (mapHintText) {
         mapHintText.textContent = "✅ Pin placed! Tap pin to remove, or drag to adjust position.";
     }
 
-    // Auto suggest landmark name
     const selectedType = (locTypeSelect && locTypeSelect.value) || "Restroom";
     suggestLocationName(lat, lng, selectedType);
 
-    // Create or update the draft marker
     if (draftMarker) {
         draftMarker.setLatLng([lat, lng]);
     } else {
@@ -378,7 +460,6 @@ function setDraftLocation(lat, lng) {
             zIndexOffset: 1500
         }).addTo(map);
 
-        // Clickable Draft Popup with prominent "Remove Pin" button right on the map!
         const popupDiv = document.createElement('div');
         popupDiv.style.textAlign = 'center';
         popupDiv.style.minWidth = '160px';
@@ -441,19 +522,16 @@ function clearDraftLocation() {
     announce('Selected pin removed.');
 }
 
-// Remove button listeners
 const clearPinBtn = document.getElementById('clear-pin-btn');
 if (clearPinBtn) clearPinBtn.addEventListener('click', clearDraftLocation);
 
 const removeFormBtn = document.getElementById('remove-pin-form-btn');
 if (removeFormBtn) removeFormBtn.addEventListener('click', clearDraftLocation);
 
-// Map Click Handler (Leaflet suppresses this if user dragged/panned)
 map.on('click', (e) => {
     setDraftLocation(e.latlng.lat, e.latlng.lng);
 });
 
-// "Pin Map Center" Button
 const centerPinBtn = document.getElementById('center-pin-btn');
 if (centerPinBtn) {
     centerPinBtn.addEventListener('click', () => {
@@ -462,7 +540,7 @@ if (centerPinBtn) {
     });
 }
 
-// 8. Undo Accidental Live Submissions
+// 10. Undo Accidental Live Submissions
 let lastCreatedDocId = null;
 let undoTimeout = null;
 const undoBanner = document.getElementById('undo-banner');
@@ -479,7 +557,7 @@ function showUndoOption(id, name) {
     undoTimeout = setTimeout(() => {
         if (undoBanner) undoBanner.style.display = 'none';
         lastCreatedDocId = null;
-    }, 15000); // 15-second undo window
+    }, 15000);
 }
 
 if (undoBtn) {
@@ -498,7 +576,7 @@ if (undoBtn) {
     });
 }
 
-// 9. Editing State Management
+// 11. Editing State Management
 let editingLocationId = null;
 
 function startEditLocation(id, name, type, lat, lng, notes = "") {
@@ -509,7 +587,7 @@ function startEditLocation(id, name, type, lat, lng, notes = "") {
         isUserTypingCustomName = true;
     }
     if (locTypeSelect) {
-        locTypeSelect.value = type;
+        locTypeSelect.value = (type === "Parking") ? "Accessible Parking" : type;
     }
     const notesInput = document.getElementById('loc-notes');
     if (notesInput) {
@@ -571,14 +649,18 @@ if (cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEditMode);
 const cancelBannerBtn = document.getElementById('cancel-edit-banner-btn');
 if (cancelBannerBtn) cancelBannerBtn.addEventListener('click', cancelEditMode);
 
-// 10. Deleting a Location
-async function deleteLocation(id, name) {
-    const confirmed = confirm(`Are you sure you want to remove "${name}" from the live map?`);
+// 12. Moderation: Deleting & Vetoing Locations
+async function deleteLocation(id, name, isVeto = false) {
+    const promptMsg = isVeto 
+        ? `🛡️ ADMIN VETO: Permanently remove "${name}" from the live map?`
+        : `Are you sure you want to remove "${name}" from the live map?`;
+
+    const confirmed = confirm(promptMsg);
     if (!confirmed) return;
 
     try {
         await deleteDoc(doc(db, "locations", id));
-        announce(`Successfully deleted ${name} from live map.`);
+        announce(`Successfully removed ${name} from the map.`);
         if (editingLocationId === id) {
             cancelEditMode();
         }
@@ -588,9 +670,24 @@ async function deleteLocation(id, name) {
     }
 }
 
-// 11. Reporting a Location (Anti-Troll Defense)
+// 13. Moderation: Verifying Locations (Admin Only)
+async function toggleVerifyLocation(id, name, currentStatus) {
+    try {
+        const newStatus = !currentStatus;
+        await updateDoc(doc(db, "locations", id), {
+            isVerified: newStatus,
+            verifiedAt: serverTimestamp()
+        });
+        announce(`${name} is now ${newStatus ? 'Verified Accessible' : 'Unverified'}.`);
+    } catch (err) {
+        console.error("Verify error:", err);
+        alert("Could not update verification: " + err.message);
+    }
+}
+
+// 14. Moderation: Reporting & Clearing Flags (Anti-Troll Defense)
 async function reportLocation(id, name) {
-    const confirmed = confirm(`Report "${name}" as spam, incorrect, or inappropriate? Our community moderation will review it.`);
+    const confirmed = confirm(`Report "${name}" as spam, incorrect, or inappropriate? Our moderation will review it.`);
     if (!confirmed) return;
 
     try {
@@ -601,50 +698,97 @@ async function reportLocation(id, name) {
             lastReportedAt: serverTimestamp()
         });
         announce("Thank you for your report. The location has been flagged for review.");
-        alert("Thank you. This location has been flagged for community review.");
+        alert("Thank you. This location has been flagged for moderation review.");
     } catch (err) {
         console.error("Report error:", err);
     }
 }
 
-// 12. Permanent Map Marker Factory with Full Screen-Reader & Action Buttons
-function createMarker(id, lat, lng, name, type, notes = "", flags = 0) {
+async function clearFlags(id, name) {
+    try {
+        await updateDoc(doc(db, "locations", id), {
+            flags: 0
+        });
+        announce(`Flags cleared for ${name}.`);
+    } catch (err) {
+        console.error("Clear flags error:", err);
+    }
+}
+
+// 15. Permanent Map Marker Factory
+function createMarker(id, lat, lng, name, type, notes = "", flags = 0, createdBy = "", isVerified = false) {
     const marker = L.marker([lat, lng]).addTo(map);
 
+    const displayType = (type === "Parking") ? "Accessible Parking" : type;
+    const canEdit = isAdmin || (createdBy === myClientId);
+
     const popupContent = document.createElement('div');
-    popupContent.style.minWidth = '200px';
+    popupContent.style.minWidth = '210px';
     popupContent.innerHTML = `
         <div style="font-family: inherit;">
-            <strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">${name}</strong>
-            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem;">
-                ${type}
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <strong style="font-size: 1.05rem;">${name}</strong>
+                ${isVerified ? '<span class="verified-badge" title="Verified Accessible">✓ Verified</span>' : ''}
+            </div>
+            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem; margin-top: 4px;">
+                ${displayType}
             </span>
+            ${flags > 0 ? `<div class="flagged-warning">⚠️ Reported by community (${flags})</div>` : ''}
             ${notes ? `<div style="font-size: 0.85rem; margin-top: 6px; padding: 4px 6px; background: #f5f5f5; border-radius: 4px; color: #333;">♿ ${notes}</div>` : ''}
             <div style="font-size: 0.8rem; margin: 6px 0; color: #666;">
                 Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}
             </div>
             <div style="display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;">
-                <button type="button" class="edit-btn" style="padding: 2px 8px; font-size: 0.8rem;" aria-label="Edit this location">✏️ Edit</button>
-                <button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;" aria-label="Delete this location">🗑️ Delete</button>
-                <button type="button" class="report-btn" style="padding: 2px 6px; font-size: 0.8rem;" title="Report this location" aria-label="Report location">🚩</button>
+                ${canEdit ? '<button type="button" class="edit-btn" style="padding: 2px 8px; font-size: 0.8rem;">✏️ Edit</button>' : ''}
+                ${isAdmin ? `
+                    <button type="button" class="verify-btn" style="padding: 2px 8px; font-size: 0.8rem;">${isVerified ? 'Unverify' : '⭐ Verify'}</button>
+                    <button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;">🛡️ Veto</button>
+                    ${flags > 0 ? '<button type="button" class="view-btn" style="padding: 2px 6px; font-size: 0.8rem;">Dismiss Flags</button>' : ''}
+                ` : (canEdit ? '<button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;">🗑️ Delete</button>' : '')}
+                <button type="button" class="report-btn" style="padding: 2px 6px; font-size: 0.8rem;" title="Report this location">🚩</button>
             </div>
         </div>
     `;
 
-    popupContent.querySelector('.edit-btn').addEventListener('click', () => {
-        marker.closePopup();
-        startEditLocation(id, name, type, lat, lng, notes);
-    });
+    const editBtn = popupContent.querySelector('.edit-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            marker.closePopup();
+            startEditLocation(id, name, displayType, lat, lng, notes);
+        });
+    }
 
-    popupContent.querySelector('.delete-btn').addEventListener('click', () => {
-        marker.closePopup();
-        deleteLocation(id, name);
-    });
+    const deleteBtn = popupContent.querySelector('.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            marker.closePopup();
+            deleteLocation(id, name, isAdmin);
+        });
+    }
 
-    popupContent.querySelector('.report-btn').addEventListener('click', () => {
-        marker.closePopup();
-        reportLocation(id, name);
-    });
+    const verifyBtn = popupContent.querySelector('.verify-btn');
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', () => {
+            marker.closePopup();
+            toggleVerifyLocation(id, name, isVerified);
+        });
+    }
+
+    const dismissBtn = popupContent.querySelector('.view-btn');
+    if (dismissBtn && flags > 0) {
+        dismissBtn.addEventListener('click', () => {
+            marker.closePopup();
+            clearFlags(id, name);
+        });
+    }
+
+    const reportBtn = popupContent.querySelector('.report-btn');
+    if (reportBtn) {
+        reportBtn.addEventListener('click', () => {
+            marker.closePopup();
+            reportLocation(id, name);
+        });
+    }
 
     marker.bindPopup(popupContent);
 
@@ -653,7 +797,7 @@ function createMarker(id, lat, lng, name, type, notes = "", flags = 0) {
         if (el) {
             el.setAttribute('role', 'button');
             el.setAttribute('tabindex', '0');
-            el.setAttribute('aria-label', `${type}: ${name}`);
+            el.setAttribute('aria-label', `${displayType}: ${name}`);
             el.addEventListener('keydown', (e) => { 
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -671,8 +815,16 @@ function createMarker(id, lat, lng, name, type, notes = "", flags = 0) {
     return marker;
 }
 
-// 13. Real-Time Sync Store
+// 16. Real-Time Sync Store
 const markersMap = new Map();
+
+function refreshAllMarkers() {
+    markersMap.forEach((data, id) => {
+        map.removeLayer(data.marker);
+        const marker = createMarker(id, data.lat, data.lng, data.name, data.type, data.notes, data.flags, data.createdBy, data.isVerified);
+        markersMap.set(id, { ...data, marker });
+    });
+}
 
 function renderLocationsList() {
     const listEl = document.getElementById('locations-list');
@@ -684,13 +836,20 @@ function renderLocationsList() {
     if (countEl) countEl.textContent = pointsArray.length;
 
     pointsArray.forEach((p) => {
+        const displayType = (p.type === "Parking") ? "Accessible Parking" : p.type;
+        const canEdit = isAdmin || (p.createdBy === myClientId);
+
         const li = document.createElement('li');
         li.className = 'location-item';
         li.innerHTML = `
             <div class="location-header">
                 <div class="location-info">
-                    <strong>${p.name}</strong>
-                    <span class="location-tag">${p.type}</span>
+                    <div>
+                        <strong>${p.name}</strong>
+                        ${p.isVerified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        ${p.flags > 0 ? `<span class="flagged-warning">⚠️ Reported (${p.flags})</span>` : ''}
+                    </div>
+                    <span class="location-tag">${displayType}</span>
                     ${p.notes ? `<div class="location-notes">♿ ${p.notes}</div>` : ''}
                 </div>
             </div>
@@ -698,12 +857,12 @@ function renderLocationsList() {
                 <button type="button" class="view-btn" aria-label="View ${p.name} on map">
                     👁️ View
                 </button>
-                <button type="button" class="edit-btn" aria-label="Edit ${p.name}">
-                    ✏️ Edit
-                </button>
-                <button type="button" class="delete-btn" aria-label="Delete ${p.name}">
-                    🗑️ Delete
-                </button>
+                ${canEdit ? `<button type="button" class="edit-btn" aria-label="Edit ${p.name}">✏️ Edit</button>` : ''}
+                ${isAdmin ? `
+                    <button type="button" class="verify-btn" aria-label="Verify ${p.name}">${p.isVerified ? 'Unverify' : '⭐ Verify'}</button>
+                    <button type="button" class="delete-btn" aria-label="Veto ${p.name}">🛡️ Veto</button>
+                    ${p.flags > 0 ? `<button type="button" class="view-btn clear-flags-btn" aria-label="Clear flags">Dismiss</button>` : ''}
+                ` : (canEdit ? `<button type="button" class="delete-btn" aria-label="Delete ${p.name}">🗑️ Delete</button>` : '')}
                 <button type="button" class="report-btn" aria-label="Report ${p.name}">
                     🚩 Report
                 </button>
@@ -716,13 +875,33 @@ function renderLocationsList() {
             announce(`Focused on ${p.name} at zoom level 14`);
         });
 
-        li.querySelector('.edit-btn').addEventListener('click', () => {
-            startEditLocation(p.id, p.name, p.type, p.lat, p.lng, p.notes || "");
-        });
+        const editBtn = li.querySelector('.edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                startEditLocation(p.id, p.name, displayType, p.lat, p.lng, p.notes || "");
+            });
+        }
 
-        li.querySelector('.delete-btn').addEventListener('click', () => {
-            deleteLocation(p.id, p.name);
-        });
+        const deleteBtn = li.querySelector('.delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                deleteLocation(p.id, p.name, isAdmin);
+            });
+        }
+
+        const verifyBtn = li.querySelector('.verify-btn');
+        if (verifyBtn) {
+            verifyBtn.addEventListener('click', () => {
+                toggleVerifyLocation(p.id, p.name, p.isVerified);
+            });
+        }
+
+        const clearFlagsBtn = li.querySelector('.clear-flags-btn');
+        if (clearFlagsBtn) {
+            clearFlagsBtn.addEventListener('click', () => {
+                clearFlags(p.id, p.name);
+            });
+        }
 
         li.querySelector('.report-btn').addEventListener('click', () => {
             reportLocation(p.id, p.name);
@@ -742,7 +921,7 @@ onSnapshot(q, (snapshot) => {
 
         if (change.type === "added") {
             if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0);
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false);
                 markersMap.set(id, { ...data, id, marker });
             }
         }
@@ -757,7 +936,7 @@ onSnapshot(q, (snapshot) => {
             if (markersMap.has(id)) {
                 const item = markersMap.get(id);
                 map.removeLayer(item.marker);
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0);
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false);
                 markersMap.set(id, { ...data, id, marker });
             }
         }
@@ -769,7 +948,7 @@ onSnapshot(q, (snapshot) => {
     announce("Working with cached offline points.");
 });
 
-// 14. Interaction Logic: Form Submission (Create or Update)
+// 17. Form Submission (Create or Update)
 const form = document.getElementById('add-location-form');
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -791,7 +970,7 @@ if (form) {
             return;
         }
 
-        const validation = validateRespectfulName(data.name, data.type);
+        const validation = validateRespectfulName(data.name);
         if (!validation.valid) {
             announce(validation.error);
             alert(validation.error);
@@ -825,6 +1004,8 @@ if (form) {
                     lng: lng,
                     notes: cleanNotes,
                     flags: 0,
+                    isVerified: isAdmin, // Automatically verified if submitted in Admin Mode
+                    createdBy: myClientId,
                     createdAt: serverTimestamp()
                 });
 
@@ -833,7 +1014,6 @@ if (form) {
                 clearDraftLocation();
                 isUserTypingCustomName = false;
 
-                // Show 15-second Undo / Remove banner
                 showUndoOption(docRef.id, validation.formatted);
             }
         } catch (err) {
@@ -847,7 +1027,7 @@ if (form) {
     });
 }
 
-// 15. Interaction Logic: GeoJSON Export
+// 18. GeoJSON Export
 const exportBtn = document.getElementById('export-btn');
 if (exportBtn) {
     exportBtn.addEventListener('click', () => {
@@ -864,7 +1044,8 @@ if (exportBtn) {
                     id: p.id,
                     name: p.name,
                     type: p.type,
-                    notes: p.notes || ""
+                    notes: p.notes || "",
+                    isVerified: p.isVerified || false
                 }
             }))
         };
@@ -882,7 +1063,7 @@ if (exportBtn) {
     });
 }
 
-// 16. Theme Toggle
+// 19. Theme Toggle
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
     themeToggle.addEventListener('click', () => {
@@ -892,7 +1073,7 @@ if (themeToggle) {
     });
 }
 
-// 17. Service Worker for Wilderness Offline Caching
+// 20. Service Worker
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
 }
