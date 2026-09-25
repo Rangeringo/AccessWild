@@ -1,8 +1,18 @@
 // 1. Initialize Map
-const map = L.map('map').setView([40.0, -100.0], 4);
+const map = L.map('map', {
+    tap: false // Helps with touch devices
+}).setView([40.0, -100.0], 4);
+
+// Use the high-reliability OSM tile server
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
 }).addTo(map);
+
+// CRITICAL FIX: Forces the map to recalculate its container size
+setTimeout(() => {
+    map.invalidateSize();
+}, 100);
 
 // 2. Screen Reader Announcer
 function announce(msg) {
