@@ -1,54 +1,170 @@
+/* 
+   ACCESSWILD DESIGN SYSTEM
+   Supports: High-Contrast Mode, Mobile-First Responsiveness, 
+   Keyboard Navigation, and Leaflet Map Rendering.
+*/
+
 :root {
-    --bg-color: #ffffff;
-    --text-color: #2d3436;
-    --primary-accent: #2980b9;
-    --focus-ring: #d35400;
-    --touch-target: 48px;
+    /* Color Tokens */
+    --bg: #f4f7f6;
+    --panel-bg: #ffffff;
+    --text: #2d3436;
+    --accent: #2d6a4f; /* Nature Green */
+    --focus: #d35400;  /* High-vis Orange focus ring */
+    --target-size: 48px; /* ADA recommended touch target */
 }
 
-/* High Contrast Theme */
+/* HIGH CONTRAST THEME OVERRIDES (Step 1) */
 [data-theme="high-contrast"] {
-    --bg-color: #000000;
-    --text-color: #ffff00;
-    --primary-accent: #ffffff;
-    --focus-ring: #00ff00;
+    --bg: #000000;
+    --panel-bg: #000000;
+    --text: #ffff00; /* High-visibility yellow */
+    --accent: #ffffff;
+    --focus: #00ff00; /* Neon green focus ring */
 }
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: system-ui, sans-serif;
+/* CORE LAYOUT */
+html, body {
+    height: 100%;
     margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
 }
 
-/* Responsive Split-Pane Layout */
+/* HEADER SECTION (Updated for Spacing/Padding) */
+header {
+    background: var(--accent);
+    color: white;
+    padding: 1.2rem 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+[data-theme="high-contrast"] header {
+    background: #000;
+    border-bottom: 2px solid #fff;
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column; /* Stacked on mobile */
+    gap: 1.2rem;            /* Space between name and button */
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (min-width: 480px) {
+    .header-content {
+        flex-direction: row; /* Side-by-side on tablet/desktop */
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    letter-spacing: 0.02rem;
+}
+
+/* ACCESSIBILITY TOGGLE BUTTON */
+#theme-toggle {
+    width: auto;
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 2px solid white;
+    border-radius: 6px;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+#theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="high-contrast"] #theme-toggle {
+    background: #ffff00;
+    color: #000;
+    border-color: #ffff00;
+}
+
+/* APP CONTAINER & SIDEBAR */
 .app-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: calc(100vh - 85px); /* Adjusts for header height */
 }
 
-#map { height: 60vh; width: 100%; }
-.sidebar { padding: 1rem; flex: 1; overflow-y: auto; }
+#map { 
+    height: 500px; /* Fixed height for mobile to prevent grey box collapse */
+    width: 100%; 
+    background-color: #e5e3df; 
+    z-index: 1;
+}
 
-@media (min-width: 768px) {
+.sidebar { 
+    padding: 1.5rem; 
+    overflow-y: auto; 
+    background: var(--panel-bg);
+}
+
+/* DESKTOP SPLIT-PANE LAYOUT */
+@media (min-width: 1024px) {
     .app-container { flex-direction: row; }
-    #map { height: 100vh; width: 65%; }
-    .sidebar { width: 35%; }
+    #map { height: 100%; width: 70%; }
+    .sidebar { width: 30%; border-left: 1px solid #ccc; }
 }
 
-/* Accessibility UI Elements */
-button, input, select {
-    min-height: var(--touch-target);
-    min-width: var(--touch-target);
+/* FORM STYLING (Step 3) */
+.form-group { margin-bottom: 1.2rem; }
+
+label { 
+    display: block; 
+    margin-bottom: 0.5rem; 
+    font-weight: bold; 
+    color: var(--text);
+}
+
+input, select {
+    width: 100%;
+    min-height: var(--target-size);
+    border: 2px solid #ccc;
+    border-radius: 6px;
     font-size: 1rem;
+    padding: 0.5rem;
+    box-sizing: border-box; /* Prevents inputs from overflowing */
+    background: white;
+    color: black;
 }
 
+.submit-btn {
+    width: 100%;
+    min-height: var(--target-size);
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* FOCUS STATES (Step 1 Accessibility) */
 *:focus {
-    outline: 3px solid var(--focus-ring);
+    outline: 4px solid var(--focus) !important;
     outline-offset: 2px;
 }
 
+/* UTILITIES */
 .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0;
     margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
