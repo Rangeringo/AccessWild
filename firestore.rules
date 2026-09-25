@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Crowdsourced accessible locations
+    // Crowdsourced accessible outdoor locations
     match /locations/{locationId} {
       // Anyone can view locations
       allow read: if true;
@@ -14,8 +14,14 @@ service cloud.firestore {
                     && request.resource.data.lat is number
                     && request.resource.data.lng is number;
                     
-      // Prevent unauthorized modification or deletion
-      allow update, delete: if false;
+      // Allow community updates with valid fields
+      allow update: if request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 120
+                    && request.resource.data.type in ['Restroom', 'Trail', 'Parking', 'Overlook'];
+                    
+      // Allow deletion of locations
+      allow delete: if true;
     }
   }
 }

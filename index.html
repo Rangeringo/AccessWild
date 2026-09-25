@@ -23,6 +23,17 @@
             <div id="map-hint" class="map-hint" aria-live="polite">
                 <span id="map-hint-text">💡 Tap or click anywhere on the map to place a pin.</span>
             </div>
+            
+            <!-- Quick GPS Locate Me Button on Map -->
+            <button type="button" id="locate-me-btn" class="map-locate-btn" aria-label="Find my current location" title="Find my location">
+                🎯
+            </button>
+
+            <!-- Gesture Handling Overlay (Ctrl + Scroll / Two Fingers) -->
+            <div id="gesture-overlay" class="gesture-overlay" aria-live="polite">
+                <span id="gesture-overlay-text">Use Ctrl + scroll to zoom the map</span>
+            </div>
+
             <div id="map" role="application" aria-label="Map showing accessible recreation points"></div>
         </section>
 
@@ -30,6 +41,12 @@
         <aside class="sidebar" aria-label="Controls and Locations">
             <section id="form-container" aria-labelledby="form-heading">
                 <h2 id="form-heading">Add Accessible Point</h2>
+
+                <!-- Active Editing Indicator -->
+                <div id="editing-banner" class="editing-banner" style="display: none;" aria-live="polite">
+                    <span>✏️ Editing Mode</span>
+                    <button type="button" id="cancel-edit-banner-btn" class="clear-pin-btn" aria-label="Cancel editing">Cancel</button>
+                </div>
                 
                 <!-- Status Banner: Explains current pin selection clearly -->
                 <div id="selection-status" class="selection-status" aria-live="polite">
@@ -42,6 +59,7 @@
                     <div class="form-group">
                         <label for="loc-name">Location Name</label>
                         <input type="text" id="loc-name" name="name" required aria-required="true" placeholder="e.g. South Fork Campground">
+                        <span id="name-suggestion-hint" class="input-hint">💡 Type a name or tap the map to auto-suggest nearby landmarks.</span>
                     </div>
 
                     <div class="form-group">
@@ -65,7 +83,8 @@
                         <button type="button" id="use-gps-btn" class="secondary-btn" aria-label="Use current device GPS location">📍 Use Current GPS</button>
                     </div>
 
-                    <button type="submit" class="submit-btn">Save Location</button>
+                    <button type="submit" id="submit-location-btn" class="submit-btn">Save Location</button>
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn" style="display: none;">Cancel Editing</button>
                 </form>
             </section>
 

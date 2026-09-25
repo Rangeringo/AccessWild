@@ -7,6 +7,8 @@
     --focus: #d35400;
     --border: #d0d7de;
     --target-size: 48px;
+    --danger: #c0392b;
+    --danger-hover: #962d22;
 }
 
 [data-theme="high-contrast"],
@@ -18,6 +20,8 @@
     --accent-hover: #e0e0e0;
     --focus: #00ff00;
     --border: #ffffff;
+    --danger: #ff5555;
+    --danger-hover: #ff0000;
 }
 
 html, body {
@@ -111,7 +115,7 @@ header {
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
     pointer-events: none;
     text-align: center;
-    max-width: 90%;
+    max-width: 85%;
     transition: all 0.3s ease;
 }
 
@@ -120,6 +124,121 @@ header {
     background: #000000;
     color: #ffff00;
     border: 2px solid #ffff00;
+}
+
+/* Locate Me Map Button (Target Icon) */
+.map-locate-btn {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    z-index: 1000;
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    color: #1976d2;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s, background-color 0.15s;
+}
+
+.map-locate-btn:hover {
+    transform: scale(1.05);
+    background: #f0f7ff;
+}
+
+[data-theme="high-contrast"] .map-locate-btn,
+[data-theme] .map-locate-btn {
+    background: #000000;
+    color: #ffff00;
+    border: 2px solid #ffff00;
+}
+
+/* Gesture Handling Overlay (Like Google Maps) */
+.gesture-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: bold;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.gesture-overlay.active {
+    opacity: 1;
+}
+
+[data-theme="high-contrast"] .gesture-overlay,
+[data-theme] .gesture-overlay {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffff00;
+    border: 3px solid #ffff00;
+}
+
+/* Google Maps-style Blue Location Dot */
+.blue-dot-container {
+    background: none !important;
+    border: none !important;
+}
+
+.blue-dot-wrapper {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.blue-dot-pulse {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(33, 150, 243, 0.45);
+    animation: bluePulse 2s infinite ease-out;
+}
+
+@keyframes bluePulse {
+    0% {
+        transform: scale(0.6);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+.blue-dot {
+    position: relative;
+    z-index: 2;
+    width: 14px;
+    height: 14px;
+    background: #1976d2;
+    border: 2.5px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="high-contrast"] .blue-dot,
+[data-theme] .blue-dot {
+    background: #00ff00;
+    border: 2.5px solid #000000;
 }
 
 /* Custom Animated Draft Pin */
@@ -254,6 +373,28 @@ header {
     }
 }
 
+/* Editing Banner */
+.editing-banner {
+    display: none;
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+    color: #0d47a1;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+[data-theme="high-contrast"] .editing-banner,
+[data-theme] .editing-banner {
+    background: #000000;
+    border-color: #ffff00;
+    color: #ffff00;
+}
+
 /* Pin Selection Status Banner in Sidebar */
 .selection-status {
     background: #fff8e1;
@@ -321,13 +462,26 @@ input, select {
     color: var(--text);
 }
 
+.input-hint {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.3;
+}
+
+[data-theme="high-contrast"] .input-hint,
+[data-theme] .input-hint {
+    color: #ffff00;
+}
+
 .button-row {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
 
-.submit-btn, .secondary-btn {
+.submit-btn, .secondary-btn, .cancel-btn {
     width: 100%;
     min-height: var(--target-size);
     border-radius: 6px;
@@ -361,6 +515,17 @@ input, select {
     background: rgba(0, 0, 0, 0.05);
 }
 
+.cancel-btn {
+    background: transparent;
+    color: var(--danger);
+    border: 2px solid var(--danger);
+    margin-top: 0.5rem;
+}
+
+.cancel-btn:hover {
+    background: rgba(192, 57, 43, 0.08);
+}
+
 [data-theme="high-contrast"] .submit-btn,
 [data-theme] .submit-btn {
     background: #ffff00;
@@ -373,6 +538,13 @@ input, select {
     background: #000000;
     color: #ffff00;
     border: 2px solid #ffff00;
+}
+
+[data-theme="high-contrast"] .cancel-btn,
+[data-theme] .cancel-btn {
+    background: #000000;
+    color: var(--danger);
+    border: 2px solid var(--danger);
 }
 
 /* Locations List in Sidebar */
@@ -394,11 +566,17 @@ input, select {
 .location-item {
     border: 2px solid var(--border);
     border-radius: 6px;
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
     background: var(--panel-bg);
     display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.location-header {
+    display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
 }
 
@@ -408,7 +586,7 @@ input, select {
 
 .location-item strong {
     display: block;
-    font-size: 1rem;
+    font-size: 1.05rem;
 }
 
 .location-tag {
@@ -428,21 +606,64 @@ input, select {
     color: #000000;
 }
 
-.view-btn {
-    min-height: 40px;
-    padding: 0.4rem 0.8rem;
+/* Card Action Buttons */
+.action-btn-group {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+
+.view-btn, .edit-btn, .delete-btn {
+    min-height: 38px;
+    padding: 0.35rem 0.75rem;
     background: transparent;
-    color: var(--text);
-    border: 2px solid var(--border);
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
+    font-size: 0.85rem;
+    border: 2px solid var(--border);
+    color: var(--text);
+}
+
+.view-btn:hover {
+    background: rgba(45, 106, 79, 0.1);
+}
+
+.edit-btn {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.edit-btn:hover {
+    background: rgba(25, 118, 210, 0.1);
+}
+
+.delete-btn {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.delete-btn:hover {
+    background: rgba(192, 57, 43, 0.1);
 }
 
 [data-theme="high-contrast"] .view-btn,
 [data-theme] .view-btn {
     border-color: #ffff00;
     color: #ffff00;
+}
+
+[data-theme="high-contrast"] .edit-btn,
+[data-theme] .edit-btn {
+    border-color: #00ffff;
+    color: #00ffff;
+}
+
+[data-theme="high-contrast"] .delete-btn,
+[data-theme] .delete-btn {
+    border-color: var(--danger);
+    color: var(--danger);
 }
 
 *:focus {
