@@ -1,84 +1,55 @@
 :root {
-    --bg: #f4f7f6;
-    --panel-bg: #ffffff;
-    --text: #2d3436;
-    --accent: #2d6a4f; /* Nature Green */
-    --focus: #d35400;
-    --target-size: 48px;
+    --bg-color: #ffffff;
+    --text-color: #2d3436;
+    --primary-accent: #2980b9;
+    --focus-ring: #d35400;
+    --touch-target: 48px;
 }
 
-/* High Contrast Toggle State */
+/* High Contrast Theme */
 [data-theme="high-contrast"] {
-    --bg: #000000;
-    --panel-bg: #000000;
-    --text: #ffff00; /* High Vis Yellow */
-    --accent: #ffffff;
-    --focus: #00ff00;
+    --bg-color: #000000;
+    --text-color: #ffff00;
+    --primary-accent: #ffffff;
+    --focus-ring: #00ff00;
 }
 
 body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: system-ui, sans-serif;
     margin: 0;
-    font-family: sans-serif;
-    background: var(--bg);
-    color: var(--text);
 }
 
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1rem;
-    background: var(--accent);
-    color: white;
-}
-
-[data-theme="high-contrast"] .header-content {
-    background: #000;
-    border-bottom: 2px solid #fff;
-}
-
-/* Responsive Layout */
+/* Responsive Split-Pane Layout */
 .app-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 60px);
+    height: 100vh;
 }
 
-#map { height: 50vh; width: 100%; }
-.sidebar { padding: 1.5rem; overflow-y: auto; background: var(--panel-bg); }
+#map { height: 60vh; width: 100%; }
+.sidebar { padding: 1rem; flex: 1; overflow-y: auto; }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
     .app-container { flex-direction: row; }
-    #map { height: 100%; width: 70%; }
-    .sidebar { width: 30%; border-left: 1px solid #ccc; }
+    #map { height: 100vh; width: 65%; }
+    .sidebar { width: 35%; }
 }
 
-/* A11y Elements */
-.form-group { margin-bottom: 1rem; }
-label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-
-input, select, button {
-    width: 100%;
-    min-height: var(--target-size);
-    border: 1px solid #ccc;
-    border-radius: 4px;
+/* Accessibility UI Elements */
+button, input, select {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
     font-size: 1rem;
-    padding: 0.5rem;
 }
 
 *:focus {
-    outline: 4px solid var(--focus) !important;
+    outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
 }
 
 .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0;
     margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
-}
-
-.submit-btn {
-    background: var(--accent);
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
 }
