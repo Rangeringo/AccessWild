@@ -1,4 +1,4 @@
-const CACHE_NAME = 'accesswild-v5';
+const CACHE_NAME = 'accesswild-v6';
 const TILES_CACHE = 'accesswild-tiles-v1';
 const MAX_CACHED_TILES = 300;
 
