@@ -649,11 +649,14 @@ if (cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEditMode);
 const cancelBannerBtn = document.getElementById('cancel-edit-banner-btn');
 if (cancelBannerBtn) cancelBannerBtn.addEventListener('click', cancelEditMode);
 
-// 12. Moderation: Deleting & Vetoing Locations
+// 12. Moderation: Deleting & Vetoing Locations (Admin Only)
 async function deleteLocation(id, name, isVeto = false) {
-    const promptMsg = isVeto 
-        ? `🛡️ ADMIN VETO: Permanently remove "${name}" from the live map?`
-        : `Are you sure you want to remove "${name}" from the live map?`;
+    if (!isAdmin) {
+        alert("Only administrators can delete points from the map. If a point is incorrect or needs removal, please click 🚩 Report to flag it for admin review.");
+        return;
+    }
+
+    const promptMsg = `🛡️ Admin Deletion: Permanently remove "${name}" from the live map?`;
 
     const confirmed = confirm(promptMsg);
     if (!confirmed) return;
@@ -742,9 +745,9 @@ function createMarker(id, lat, lng, name, type, notes = "", flags = 0, createdBy
                 ${canEdit ? '<button type="button" class="edit-btn" style="padding: 2px 8px; font-size: 0.8rem;">✏️ Edit</button>' : ''}
                 ${isAdmin ? `
                     <button type="button" class="verify-btn" style="padding: 2px 8px; font-size: 0.8rem;">${isVerified ? 'Unverify' : '⭐ Verify'}</button>
-                    <button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;">🛡️ Veto</button>
+                    <button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;">🛡️ Delete</button>
                     ${flags > 0 ? '<button type="button" class="view-btn" style="padding: 2px 6px; font-size: 0.8rem;">Dismiss Flags</button>' : ''}
-                ` : (canEdit ? '<button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;">🗑️ Delete</button>' : '')}
+                ` : ''}
                 <button type="button" class="report-btn" style="padding: 2px 6px; font-size: 0.8rem;" title="Report this location">🚩</button>
             </div>
         </div>
@@ -860,9 +863,9 @@ function renderLocationsList() {
                 ${canEdit ? `<button type="button" class="edit-btn" aria-label="Edit ${p.name}">✏️ Edit</button>` : ''}
                 ${isAdmin ? `
                     <button type="button" class="verify-btn" aria-label="Verify ${p.name}">${p.isVerified ? 'Unverify' : '⭐ Verify'}</button>
-                    <button type="button" class="delete-btn" aria-label="Veto ${p.name}">🛡️ Veto</button>
+                    <button type="button" class="delete-btn" aria-label="Delete ${p.name}">🛡️ Delete</button>
                     ${p.flags > 0 ? `<button type="button" class="view-btn clear-flags-btn" aria-label="Clear flags">Dismiss</button>` : ''}
-                ` : (canEdit ? `<button type="button" class="delete-btn" aria-label="Delete ${p.name}">🗑️ Delete</button>` : '')}
+                ` : ''}
                 <button type="button" class="report-btn" aria-label="Report ${p.name}">
                     🚩 Report
                 </button>

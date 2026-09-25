@@ -1,4 +1,4 @@
-const CACHE_NAME = 'accesswild-v3';
+const CACHE_NAME = 'accesswild-v4';
 const ASSETS = [
     './',
     './index.html',
