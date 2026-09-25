@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AccessWild | Inclusive Nature Mapping</title>
+    <!-- Web App Manifest for Offline & PWA App Installation -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2d6a4f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AccessWild">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css">
@@ -12,8 +21,16 @@
 
     <header role="banner">
         <div class="header-content">
-            <h1>AccessWild 🌲♿</h1>
+            <div class="brand-area">
+                <h1>AccessWild 🌲♿</h1>
+                <!-- Network / Offline Sync Status Badge -->
+                <div id="network-status" class="network-badge online" aria-live="polite" title="Connection active">
+                    <span class="status-dot"></span>
+                    <span id="network-status-text">Online</span>
+                </div>
+            </div>
             <div class="header-actions">
+                <button id="pwa-install-btn" type="button" style="display: none;" title="Install AccessWild as an App on this device">📲 Install App</button>
                 <button id="admin-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🛡️ Admin</button>
                 <button id="theme-toggle" aria-pressed="false">Toggle High Contrast</button>
             </div>
@@ -42,6 +59,11 @@
 
         <!-- DATA & SEARCH SIDEBAR -->
         <aside class="sidebar" aria-label="Controls and Locations">
+            <!-- Offline Notification Bar -->
+            <div id="offline-bar" class="offline-bar" style="display: none;" aria-live="polite">
+                <span>📡 <strong>Offline Wilderness Mode:</strong> Changes are saved locally on your device and will automatically sync when you regain cell service.</span>
+            </div>
+
             <!-- Undo Banner for accidental saves -->
             <div id="undo-banner" class="undo-banner" aria-live="polite">
                 <span id="undo-banner-text">✅ Published to live map!</span>
@@ -107,13 +129,29 @@
                 </form>
             </section>
 
+            <!-- PUBLIC LANDS ACCESSIBILITY NOTICE & ADVOCACY -->
+            <section class="public-lands-card" aria-labelledby="policy-notice-heading">
+                <div class="notice-header">
+                    <span class="notice-icon" aria-hidden="true">🏛️🌲</span>
+                    <h3 id="policy-notice-heading">Public Lands Accessibility & Restroom Upgrades</h3>
+                </div>
+                <div class="notice-body">
+                    <p>
+                        <strong>Please Note:</strong> Not all recreation sites, trailheads, and rustic areas on public lands currently feature accessible restrooms or ADA-compliant facilities. Under official guidelines from agencies like the <strong>U.S. Forest Service (USFS)</strong> and the <strong>Bureau of Land Management (BLM)</strong>, older non-accessible vault toilets and facilities are systematically upgraded to modern accessible standards as existing infrastructure reaches the end of its service lifecycle and is scheduled for capital replacement.
+                    </p>
+                    <p>
+                        <strong>How Your Feedback Helps:</strong> Community-reported submissions and real-world accessibility notes help identify where barrier-free access is most urgently needed. We aggregate this public feedback to work collaboratively with land managers, agencies, and advocacy groups to help prioritize accessibility improvements across our public trails and recreation areas.
+                    </p>
+                </div>
+            </section>
+
             <!-- ACCESSIBLE LOCATIONS DIRECTORY -->
             <section class="locations-container" aria-labelledby="locations-heading">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2 id="locations-heading" style="margin: 0; font-size: 1.25rem;">Live Points (<span id="points-count">0</span>)</h2>
                     <button type="button" id="export-btn" class="secondary-btn" style="width: auto; min-height: 36px; padding: 0.3rem 0.8rem; font-size: 0.85rem;">Export GeoJSON</button>
                 </div>
-                <p id="list-instructions" style="font-size: 0.85rem; margin-top: 0.4rem; opacity: 0.85;">⚡ Powered by Cloud Firestore. Updates sync live across all visitors.</p>
+                <p id="list-instructions" style="font-size: 0.85rem; margin-top: 0.4rem; opacity: 0.85;">⚡ Powered by Cloud Firestore. Works offline in wilderness areas and syncs automatically.</p>
                 <ul id="locations-list" class="locations-list" role="list">
                     <!-- Populated dynamically via Firebase onSnapshot -->
                 </ul>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="forestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6a4f"/>
+      <stop offset="100%" stop-color="#1b4332"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Rounded Shield -->
+  <rect width="512" height="512" rx="108" fill="url(#forestGrad)"/>
+  
+  <!-- Outer Ring Accent -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#52b788" stroke-width="8" opacity="0.4"/>
+
+  <!-- Left: Pine Tree Symbol -->
+  <g fill="#d8f3dc">
+    <!-- Top tier -->
+    <polygon points="190,100 135,185 245,185"/>
+    <!-- Middle tier -->
+    <polygon points="190,160 120,255 260,255"/>
+    <!-- Bottom tier -->
+    <polygon points="190,230 100,345 280,345"/>
+    <!-- Trunk -->
+    <rect x="175" y="345" width="30" height="65" rx="4" fill="#95d5b2"/>
+  </g>
+
+  <!-- Right: Universal Accessibility Symbol (Forward Motion) -->
+  <g fill="#ffffff" transform="translate(190, 40)">
+    <!-- Head -->
+    <circle cx="160" cy="110" r="28"/>
+    <!-- Torso and Arms -->
+    <path d="M 125,160 C 135,150 155,145 175,155 L 225,185 C 235,190 240,205 230,215 C 220,225 205,220 198,212 L 165,190 L 155,245 L 210,295 C 220,305 215,320 205,328 C 195,335 180,330 172,320 L 128,270 C 120,260 115,245 118,230 L 132,165 Z"/>
+    <!-- Wheelchair Wheel -->
+    <path d="M 140,250 A 65,65 0 1,1 95,340" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round"/>
+  </g>
+</svg>

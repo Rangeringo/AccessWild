@@ -834,3 +834,193 @@ input, select, textarea {
     clip: rect(0, 0, 0, 0);
     border: 0;
 }
+
+/* Offline, PWA & Public Lands Policy Styles */
+.brand-area {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.network-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.network-badge.online {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.network-badge.offline {
+    background: #e67e22;
+    color: #ffffff;
+    border: 1px solid #d35400;
+    animation: offlinePulse 2s infinite ease-in-out;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.network-badge.online .status-dot {
+    background: #2ecc71;
+    box-shadow: 0 0 6px #2ecc71;
+}
+
+.network-badge.offline .status-dot {
+    background: #ffffff;
+}
+
+@keyframes offlinePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+}
+
+#pwa-install-btn {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background: #27ae60;
+    color: white;
+    border: 2px solid white;
+    border-radius: 6px;
+    font-weight: bold;
+    min-height: var(--target-size);
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+#pwa-install-btn:hover {
+    background: #219653;
+}
+
+.offline-bar {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-left: 5px solid #ff9800;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Public Lands Accessibility Notice Card */
+.public-lands-card {
+    background: #edf7f2;
+    border: 1px solid #c2e2d2;
+    border-left: 5px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.1rem;
+    margin: 1.5rem 0;
+}
+
+.notice-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.notice-icon {
+    font-size: 1.3rem;
+}
+
+.public-lands-card h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.notice-body p {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: #333333;
+}
+
+.notice-body p:first-child {
+    margin-top: 0;
+}
+
+/* Sync pending badge for offline-created points */
+.pending-sync-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-left: 6px;
+}
+
+/* High Contrast Theme Overrides */
+[data-theme="high-contrast"] .network-badge,
+[data-theme] .network-badge {
+    background: #000;
+    color: #fff;
+    border: 2px solid #fff;
+}
+
+[data-theme="high-contrast"] .network-badge.offline,
+[data-theme] .network-badge.offline {
+    background: #ff5555;
+    color: #000;
+    border: 2px solid #ffff00;
+}
+
+[data-theme="high-contrast"] #pwa-install-btn,
+[data-theme] #pwa-install-btn {
+    background: #000;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+}
+
+[data-theme="high-contrast"] .offline-bar,
+[data-theme] .offline-bar {
+    background: #000;
+    color: #ffff00;
+    border: 2px solid #ffff00;
+}
+
+[data-theme="high-contrast"] .public-lands-card,
+[data-theme] .public-lands-card {
+    background: #000;
+    color: #fff;
+    border: 2px solid #fff;
+}
+
+[data-theme="high-contrast"] .public-lands-card h3,
+[data-theme] .public-lands-card h3 {
+    color: #ffff00;
+}
+
+[data-theme="high-contrast"] .notice-body p,
+[data-theme] .notice-body p {
+    color: #ffffff;
+}
+
+[data-theme="high-contrast"] .pending-sync-badge,
+[data-theme] .pending-sync-badge {
+    background: #000;
+    color: #ffff00;
+    border: 1px solid #ffff00;
+}
+

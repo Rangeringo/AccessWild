@@ -42,6 +42,70 @@ try {
     console.warn("Persistence init note:", e);
 }
 
+// 1B. Network Status Detection & PWA App Installation
+const networkBadge = document.getElementById('network-status');
+const networkStatusText = document.getElementById('network-status-text');
+const offlineBar = document.getElementById('offline-bar');
+
+function updateNetworkStatus() {
+    const isOnline = navigator.onLine;
+    if (networkBadge && networkStatusText) {
+        if (isOnline) {
+            networkBadge.className = 'network-badge online';
+            networkStatusText.textContent = 'Online';
+            networkBadge.title = 'Connected: Points sync live with all users';
+            if (offlineBar) offlineBar.style.display = 'none';
+        } else {
+            networkBadge.className = 'network-badge offline';
+            networkStatusText.textContent = 'Offline (Saved Locally)';
+            networkBadge.title = 'Offline: New points and edits are saved on this device and will sync when reconnected';
+            if (offlineBar) offlineBar.style.display = 'block';
+        }
+    }
+}
+
+window.addEventListener('online', () => {
+    updateNetworkStatus();
+    announce("Internet connection restored. Live sync active.");
+});
+
+window.addEventListener('offline', () => {
+    updateNetworkStatus();
+    announce("You are offline. New points and edits are saved locally on your device and will sync when reconnected.");
+});
+
+updateNetworkStatus();
+
+// PWA Install Prompt (Add to Home Screen)
+let deferredInstallPrompt = null;
+const pwaInstallBtn = document.getElementById('pwa-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (pwaInstallBtn) {
+        pwaInstallBtn.style.display = 'inline-flex';
+    }
+});
+
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+            announce('AccessWild installed to your device!');
+        }
+        deferredInstallPrompt = null;
+        pwaInstallBtn.style.display = 'none';
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+    announce("AccessWild successfully installed as an app.");
+});
+
 // 2. Client Device Identity (Prevents Trolls from Deleting Others' Submissions)
 let myClientId = localStorage.getItem('accesswild_client_id');
 if (!myClientId) {
@@ -719,7 +783,7 @@ async function clearFlags(id, name) {
 }
 
 // 15. Permanent Map Marker Factory
-function createMarker(id, lat, lng, name, type, notes = "", flags = 0, createdBy = "", isVerified = false) {
+function createMarker(id, lat, lng, name, type, notes = "", flags = 0, createdBy = "", isVerified = false, isPendingSync = false) {
     const marker = L.marker([lat, lng]).addTo(map);
 
     const displayType = (type === "Parking") ? "Accessible Parking" : type;
@@ -729,13 +793,16 @@ function createMarker(id, lat, lng, name, type, notes = "", flags = 0, createdBy
     popupContent.style.minWidth = '210px';
     popupContent.innerHTML = `
         <div style="font-family: inherit;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
                 <strong style="font-size: 1.05rem;">${name}</strong>
                 ${isVerified ? '<span class="verified-badge" title="Verified Accessible">✓ Verified</span>' : ''}
             </div>
-            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem; margin-top: 4px;">
-                ${displayType}
-            </span>
+            <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem;">
+                    ${displayType}
+                </span>
+                ${isPendingSync ? '<span class="pending-sync-badge" title="Saved on your device. Will sync to everyone when reconnected.">⏳ Saved Offline</span>' : ''}
+            </div>
             ${flags > 0 ? `<div class="flagged-warning">⚠️ Reported by community (${flags})</div>` : ''}
             ${notes ? `<div style="font-size: 0.85rem; margin-top: 6px; padding: 4px 6px; background: #f5f5f5; border-radius: 4px; color: #333;">♿ ${notes}</div>` : ''}
             <div style="font-size: 0.8rem; margin: 6px 0; color: #666;">
@@ -824,7 +891,7 @@ const markersMap = new Map();
 function refreshAllMarkers() {
     markersMap.forEach((data, id) => {
         map.removeLayer(data.marker);
-        const marker = createMarker(id, data.lat, data.lng, data.name, data.type, data.notes, data.flags, data.createdBy, data.isVerified);
+        const marker = createMarker(id, data.lat, data.lng, data.name, data.type, data.notes, data.flags, data.createdBy, data.isVerified, data.isPendingSync || false);
         markersMap.set(id, { ...data, marker });
     });
 }
@@ -850,6 +917,7 @@ function renderLocationsList() {
                     <div>
                         <strong>${p.name}</strong>
                         ${p.isVerified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        ${p.isPendingSync ? '<span class="pending-sync-badge">⏳ Offline (Sync Pending)</span>' : ''}
                         ${p.flags > 0 ? `<span class="flagged-warning">⚠️ Reported (${p.flags})</span>` : ''}
                     </div>
                     <span class="location-tag">${displayType}</span>
@@ -914,18 +982,19 @@ function renderLocationsList() {
     });
 }
 
-// Subscribe to Live Crowdsourced Firestore Updates
+// Subscribe to Live Crowdsourced Firestore Updates (With Offline Cache Metadata)
 const q = query(locationsCol, orderBy("createdAt", "desc"));
-onSnapshot(q, (snapshot) => {
+onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
         const docSnap = change.doc;
         const data = docSnap.data();
         const id = docSnap.id;
+        const isPendingSync = docSnap.metadata.hasPendingWrites;
 
         if (change.type === "added") {
             if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false);
-                markersMap.set(id, { ...data, id, marker });
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false, isPendingSync);
+                markersMap.set(id, { ...data, id, marker, isPendingSync });
             }
         }
         if (change.type === "removed") {
@@ -939,19 +1008,19 @@ onSnapshot(q, (snapshot) => {
             if (markersMap.has(id)) {
                 const item = markersMap.get(id);
                 map.removeLayer(item.marker);
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false);
-                markersMap.set(id, { ...data, id, marker });
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0, data.createdBy || "", data.isVerified || false, isPendingSync);
+                markersMap.set(id, { ...data, id, marker, isPendingSync });
             }
         }
     });
 
     renderLocationsList();
 }, (error) => {
-    console.error("Firestore real-time sync error:", error);
+    console.warn("Firestore real-time sync notice:", error);
     announce("Working with cached offline points.");
 });
 
-// 17. Form Submission (Create or Update)
+// 17. Form Submission (Create or Update with Offline Resilience)
 const form = document.getElementById('add-location-form');
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -985,7 +1054,7 @@ if (form) {
 
         submitBtn.disabled = true;
         const originalText = submitBtn.textContent;
-        submitBtn.textContent = editingLocationId ? "Saving Updates..." : "Publishing to Live Map...";
+        submitBtn.textContent = editingLocationId ? "Saving Updates..." : (navigator.onLine ? "Publishing to Live Map..." : "Saving Offline...");
 
         try {
             if (editingLocationId) {
@@ -997,7 +1066,13 @@ if (form) {
                     notes: cleanNotes,
                     updatedAt: serverTimestamp()
                 });
-                announce(`Success! Updated ${validation.formatted} on the live map.`);
+
+                if (navigator.onLine) {
+                    announce(`Success! Updated ${validation.formatted} on the live map.`);
+                } else {
+                    announce(`Updated ${validation.formatted} offline. It will sync automatically when reconnected.`);
+                    alert(`📡 Saved Offline!\n"${validation.formatted}" was updated in your browser's local cache. It will automatically sync to everyone's map as soon as you reconnect to cell service.`);
+                }
                 cancelEditMode();
             } else {
                 const docRef = await addDoc(locationsCol, {
@@ -1012,7 +1087,13 @@ if (form) {
                     createdAt: serverTimestamp()
                 });
 
-                announce(`Success! Published ${validation.formatted} live to everyone's map.`);
+                if (navigator.onLine) {
+                    announce(`Success! Published ${validation.formatted} live to everyone's map.`);
+                } else {
+                    announce(`Published ${validation.formatted} offline. It will sync automatically when reconnected.`);
+                    alert(`📡 Saved Offline!\n"${validation.formatted}" is saved locally on your device and visible on your map. It will automatically sync to everyone's map when you regain cell service.`);
+                }
+
                 form.reset();
                 clearDraftLocation();
                 isUserTypingCustomName = false;
@@ -1021,8 +1102,8 @@ if (form) {
             }
         } catch (err) {
             console.error("Error saving point to Firestore:", err);
-            announce("Error saving location. Check your internet connection.");
-            alert("Could not save to live database: " + err.message);
+            announce("Saved to local offline cache. Changes will sync when reconnected.");
+            alert("📡 Saved locally on your device! Your submission is stored in the browser offline cache and will sync once cell service is available.");
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;

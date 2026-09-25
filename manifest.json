@@ -1,0 +1,19 @@
+{
+  "name": "AccessWild | Inclusive Nature Mapping",
+  "short_name": "AccessWild",
+  "description": "Crowdsourced accessible nature and outdoor recreation mapping with full offline support.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1b4332",
+  "theme_color": "#2d6a4f",
+  "icons": [
+    {
+      "src": "./icon-192.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
