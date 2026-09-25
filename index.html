@@ -39,6 +39,12 @@
 
         <!-- DATA & SEARCH SIDEBAR -->
         <aside class="sidebar" aria-label="Controls and Locations">
+            <!-- Undo Banner for accidental saves -->
+            <div id="undo-banner" class="undo-banner" aria-live="polite">
+                <span id="undo-banner-text">✅ Published to live map!</span>
+                <button type="button" id="undo-save-btn">↩ Undo / Remove</button>
+            </div>
+
             <section id="form-container" aria-labelledby="form-heading">
                 <h2 id="form-heading">Add Accessible Point</h2>
 
@@ -52,29 +58,39 @@
                 <div id="selection-status" class="selection-status" aria-live="polite">
                     <span>📍</span>
                     <span id="selection-status-text">No spot selected yet. Tap the map or use the buttons below.</span>
-                    <button type="button" id="clear-pin-btn" class="clear-pin-btn" style="display: none;" aria-label="Clear selected pin">Clear</button>
+                    <button type="button" id="clear-pin-btn" class="danger-btn" style="display: none; margin-left: auto;" aria-label="Remove selected pin">❌ Remove Pin</button>
                 </div>
 
                 <form id="add-location-form">
                     <div class="form-group">
                         <label for="loc-name">Location Name</label>
                         <input type="text" id="loc-name" name="name" required aria-required="true" placeholder="e.g. South Fork Campground">
-                        <span id="name-suggestion-hint" class="input-hint">💡 Type a name or tap the map to auto-suggest nearby landmarks.</span>
+                        <span id="name-suggestion-hint" class="input-hint">💡 Tap map to auto-suggest nearby landmarks or type your own.</span>
                     </div>
 
                     <div class="form-group">
-                        <label for="loc-type">Facility Type</label>
+                        <label for="loc-type">Facility / Spot Type</label>
                         <select id="loc-type" name="type">
                             <option value="Restroom">Accessible Restroom</option>
+                            <option value="Rest Stop">Highway Rest Stop / Gas Station</option>
                             <option value="Trail">Level Trail</option>
                             <option value="Parking">Reserved Parking</option>
                             <option value="Overlook">Accessible Viewpoint / Overlook</option>
+                            <option value="Business">Accessible Business / Diner / Store</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="coords">Coordinates</label>
-                        <input type="text" id="coords" name="coordinates" required readonly placeholder="Tap map or use buttons below">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" id="coords" name="coordinates" required readonly placeholder="Tap map or use buttons below" style="flex: 1;">
+                            <button type="button" id="remove-pin-form-btn" class="danger-btn" style="display: none; min-height: 48px;" aria-label="Remove pin from map">❌ Remove</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loc-notes">Accessibility Features & Notes (Optional)</label>
+                        <textarea id="loc-notes" name="notes" rows="2" placeholder="e.g. Paved path, grab bars, roll-in stall, wheelchair ramp..."></textarea>
                     </div>
 
                     <!-- Easy Buttons: Motor/Cognitive Accessible -->

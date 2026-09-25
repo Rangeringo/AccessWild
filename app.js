@@ -71,7 +71,7 @@ function announce(msg) {
     if (el) el.textContent = msg;
 }
 
-// 4. Gesture Handling: Ctrl + Scroll on Desktop & Two-Finger Pan on Mobile (Google Maps Style)
+// 4. Gesture Handling: Ctrl + Scroll on Desktop & Two-Finger Pan on Mobile
 const gestureOverlay = document.getElementById('gesture-overlay');
 const gestureText = document.getElementById('gesture-overlay-text');
 let gestureTimeout = null;
@@ -86,7 +86,6 @@ function showGestureHint(text) {
     }, 1500);
 }
 
-// Desktop: Check for Ctrl key on mouse wheel
 mapEl.addEventListener('wheel', (e) => {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const modifierPressed = isMac ? e.metaKey : e.ctrlKey;
@@ -99,13 +98,10 @@ mapEl.addEventListener('wheel', (e) => {
     }
 }, { passive: true });
 
-// Mobile: Two-finger gesture handling
 mapEl.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
-        // Allow normal single-finger page scrolling
         map.dragging.disable();
     } else if (e.touches.length >= 2) {
-        // Two fingers: activate map panning and pinch-to-zoom
         map.dragging.enable();
     }
 }, { passive: true });
@@ -120,7 +116,7 @@ mapEl.addEventListener('touchend', () => {
     map.dragging.enable();
 }, { passive: true });
 
-// 5. User Current Location (Google Maps-Style Pulsing Blue Dot)
+// 5. User Current Location (Pulsing Blue Dot)
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 
@@ -142,7 +138,6 @@ function locateUser(flyTo = true, setDraft = false) {
             const lng = pos.coords.longitude;
             const accuracy = pos.coords.accuracy || 20;
 
-            // Render Google Maps style Blue Dot
             if (!userLocationMarker) {
                 const blueDotIcon = L.divIcon({
                     className: 'blue-dot-container',
@@ -198,13 +193,11 @@ function locateUser(flyTo = true, setDraft = false) {
     );
 }
 
-// Connect Map Locate Button
 const locateMeBtn = document.getElementById('locate-me-btn');
 if (locateMeBtn) {
     locateMeBtn.addEventListener('click', () => locateUser(true, false));
 }
 
-// Connect Sidebar GPS Button
 const gpsBtn = document.getElementById('use-gps-btn');
 if (gpsBtn) {
     gpsBtn.addEventListener('click', () => locateUser(true, true));
@@ -220,7 +213,6 @@ const nameHint = document.getElementById('name-suggestion-hint');
 
 if (locNameInput) {
     locNameInput.addEventListener('input', () => {
-        // If user manually edited away from auto-suggestion, remember their preference
         if (locNameInput.value.trim() !== lastAutoSuggestedName) {
             isUserTypingCustomName = true;
         }
@@ -229,7 +221,6 @@ if (locNameInput) {
 
 if (locTypeSelect) {
     locTypeSelect.addEventListener('change', () => {
-        // If the current name was auto-suggested, update suffix cleanly
         if (!isUserTypingCustomName && lastAutoSuggestedName && locNameInput) {
             const currentCoords = document.getElementById('coords').value;
             if (currentCoords) {
@@ -244,7 +235,7 @@ if (locTypeSelect) {
 
 async function suggestLocationName(lat, lng, type) {
     if (isUserTypingCustomName && locNameInput && locNameInput.value.trim().length > 0) {
-        return; // Preserve custom names entered by user
+        return;
     }
 
     if (nameHint) {
@@ -260,29 +251,32 @@ async function suggestLocationName(lat, lng, type) {
         const data = await response.json();
         const addr = data.address || {};
 
-        // Find best landmark identifier
         const landmark = data.name ||
                          addr.park ||
                          addr.leisure ||
                          addr.natural ||
                          addr.tourism ||
                          addr.trail ||
+                         addr.amenity ||
                          addr.road ||
                          addr.suburb ||
                          addr.city ||
                          addr.town ||
-                         "Nature Area";
+                         "Nature Spot";
 
-        // Build descriptive, clean title
         let suggested = "";
         if (type === "Restroom") {
             suggested = `${landmark} Accessible Restroom`;
+        } else if (type === "Rest Stop") {
+            suggested = `${landmark} Rest Area & Services`;
         } else if (type === "Trail") {
             suggested = landmark.toLowerCase().includes("trail") ? landmark : `${landmark} Level Trail`;
         } else if (type === "Parking") {
             suggested = `${landmark} Reserved Parking`;
         } else if (type === "Overlook") {
             suggested = `${landmark} Viewpoint`;
+        } else if (type === "Business") {
+            suggested = `${landmark} Accessible Facility`;
         } else {
             suggested = `${landmark} Accessible Point`;
         }
@@ -319,16 +313,11 @@ function validateRespectfulName(name, type) {
         }
     }
 
-    // Ensure clarity by appending facility type if omitted
     let formatted = name.trim();
-    if (!formatted.toLowerCase().includes(type.toLowerCase())) {
-        formatted = `${formatted} (${type})`;
-    }
-
     return { valid: true, formatted };
 }
 
-// 7. Draft Pin Management
+// 7. Draft Pin Management & Removal (Accidental Pin Protection)
 let draftMarker = null;
 
 function setDraftLocation(lat, lng) {
@@ -337,27 +326,31 @@ function setDraftLocation(lat, lng) {
         coordsInput.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     }
 
-    // Update Status Banner in Sidebar
+    // Show Remove buttons in sidebar
     const statusText = document.getElementById('selection-status-text');
     const statusContainer = document.getElementById('selection-status');
     const clearBtn = document.getElementById('clear-pin-btn');
+    const removeFormBtn = document.getElementById('remove-pin-form-btn');
     if (statusText) {
-        statusText.textContent = `Spot selected! Drag pin to fine-tune.`;
+        statusText.textContent = `Spot selected! Drag pin to adjust or remove below.`;
     }
     if (statusContainer) {
         statusContainer.classList.add('is-selected');
     }
     if (clearBtn) {
-        clearBtn.style.display = 'inline-block';
+        clearBtn.style.display = 'inline-flex';
+    }
+    if (removeFormBtn) {
+        removeFormBtn.style.display = 'inline-flex';
     }
 
-    // Update floating map hint
+    // Update map hint
     const mapHintText = document.getElementById('map-hint-text');
     if (mapHintText) {
-        mapHintText.textContent = "✅ Pin placed! Drag it to adjust, or complete form to save.";
+        mapHintText.textContent = "✅ Pin placed! Tap pin to remove, or drag to adjust position.";
     }
 
-    // Suggest smart name based on coordinates
+    // Auto suggest landmark name
     const selectedType = (locTypeSelect && locTypeSelect.value) || "Restroom";
     suggestLocationName(lat, lng, selectedType);
 
@@ -385,12 +378,22 @@ function setDraftLocation(lat, lng) {
             zIndexOffset: 1500
         }).addTo(map);
 
-        draftMarker.bindTooltip("<b>📍 Selected Spot</b><br>Drag to fine-tune position", {
-            permanent: true,
-            direction: "top",
-            offset: [0, -44],
-            className: "draft-tooltip"
+        // Clickable Draft Popup with prominent "Remove Pin" button right on the map!
+        const popupDiv = document.createElement('div');
+        popupDiv.style.textAlign = 'center';
+        popupDiv.style.minWidth = '160px';
+        popupDiv.innerHTML = `
+            <strong>📍 Selected Spot</strong>
+            <p style="margin: 4px 0 8px 0; font-size: 0.85rem; color: #555;">Drag to adjust position</p>
+            <button type="button" class="danger-btn" style="width: 100%; justify-content: center; padding: 4px;" aria-label="Remove this pin">
+                ❌ Remove Pin
+            </button>
+        `;
+        popupDiv.querySelector('button').addEventListener('click', () => {
+            clearDraftLocation();
         });
+
+        draftMarker.bindPopup(popupDiv);
 
         draftMarker.on('dragend', (e) => {
             const pos = e.target.getLatLng();
@@ -402,7 +405,7 @@ function setDraftLocation(lat, lng) {
         });
     }
 
-    announce(`Pin placed at latitude ${lat.toFixed(3)}, longitude ${lng.toFixed(3)}.`);
+    announce(`Pin placed at latitude ${lat.toFixed(3)}, longitude ${lng.toFixed(3)}. You can drag the pin to adjust or remove it.`);
 }
 
 function clearDraftLocation() {
@@ -416,6 +419,8 @@ function clearDraftLocation() {
     const statusText = document.getElementById('selection-status-text');
     const statusContainer = document.getElementById('selection-status');
     const clearBtn = document.getElementById('clear-pin-btn');
+    const removeFormBtn = document.getElementById('remove-pin-form-btn');
+
     if (statusText) {
         statusText.textContent = 'No spot selected yet. Tap the map or use the buttons below.';
     }
@@ -425,13 +430,23 @@ function clearDraftLocation() {
     if (clearBtn) {
         clearBtn.style.display = 'none';
     }
+    if (removeFormBtn) {
+        removeFormBtn.style.display = 'none';
+    }
 
     const mapHintText = document.getElementById('map-hint-text');
     if (mapHintText) {
         mapHintText.textContent = '💡 Tap or click anywhere on the map to place a pin.';
     }
-    announce('Selected pin cleared.');
+    announce('Selected pin removed.');
 }
+
+// Remove button listeners
+const clearPinBtn = document.getElementById('clear-pin-btn');
+if (clearPinBtn) clearPinBtn.addEventListener('click', clearDraftLocation);
+
+const removeFormBtn = document.getElementById('remove-pin-form-btn');
+if (removeFormBtn) removeFormBtn.addEventListener('click', clearDraftLocation);
 
 // Map Click Handler (Leaflet suppresses this if user dragged/panned)
 map.on('click', (e) => {
@@ -447,19 +462,48 @@ if (centerPinBtn) {
     });
 }
 
-// "Clear Pin" Button
-const clearPinBtn = document.getElementById('clear-pin-btn');
-if (clearPinBtn) {
-    clearPinBtn.addEventListener('click', clearDraftLocation);
+// 8. Undo Accidental Live Submissions
+let lastCreatedDocId = null;
+let undoTimeout = null;
+const undoBanner = document.getElementById('undo-banner');
+const undoText = document.getElementById('undo-banner-text');
+const undoBtn = document.getElementById('undo-save-btn');
+
+function showUndoOption(id, name) {
+    if (!undoBanner || !undoText) return;
+    lastCreatedDocId = id;
+    undoText.textContent = `✅ Published "${name}" live!`;
+    undoBanner.style.display = 'flex';
+
+    clearTimeout(undoTimeout);
+    undoTimeout = setTimeout(() => {
+        if (undoBanner) undoBanner.style.display = 'none';
+        lastCreatedDocId = null;
+    }, 15000); // 15-second undo window
 }
 
-// 8. Editing State Management
+if (undoBtn) {
+    undoBtn.addEventListener('click', async () => {
+        if (!lastCreatedDocId) return;
+        const targetId = lastCreatedDocId;
+        undoBanner.style.display = 'none';
+        try {
+            await deleteDoc(doc(db, "locations", targetId));
+            announce("Submission undone and removed from live map.");
+            alert("Location submission undone and removed from the live map.");
+        } catch (e) {
+            console.error("Undo error:", e);
+        }
+        lastCreatedDocId = null;
+    });
+}
+
+// 9. Editing State Management
 let editingLocationId = null;
 
-function startEditLocation(id, name, type, lat, lng) {
+function startEditLocation(id, name, type, lat, lng, notes = "") {
     editingLocationId = id;
 
-    // Populate Form Fields
     if (locNameInput) {
         locNameInput.value = name;
         isUserTypingCustomName = true;
@@ -467,12 +511,14 @@ function startEditLocation(id, name, type, lat, lng) {
     if (locTypeSelect) {
         locTypeSelect.value = type;
     }
+    const notesInput = document.getElementById('loc-notes');
+    if (notesInput) {
+        notesInput.value = notes;
+    }
 
-    // Set pin on the map
     setDraftLocation(lat, lng);
     map.flyTo([lat, lng], 14, { duration: 1 });
 
-    // Update UI elements for Edit Mode
     const formHeading = document.getElementById('form-heading');
     if (formHeading) formHeading.textContent = "Edit Accessible Point";
 
@@ -488,7 +534,6 @@ function startEditLocation(id, name, type, lat, lng) {
         editingBanner.querySelector('span').textContent = `✏️ Editing "${name}"`;
     }
 
-    // Scroll smoothly to form
     const formContainer = document.getElementById('form-container');
     if (formContainer) {
         formContainer.scrollIntoView({ behavior: 'smooth' });
@@ -526,7 +571,7 @@ if (cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEditMode);
 const cancelBannerBtn = document.getElementById('cancel-edit-banner-btn');
 if (cancelBannerBtn) cancelBannerBtn.addEventListener('click', cancelEditMode);
 
-// 9. Deleting a Location
+// 10. Deleting a Location
 async function deleteLocation(id, name) {
     const confirmed = confirm(`Are you sure you want to remove "${name}" from the live map?`);
     if (!confirmed) return;
@@ -543,37 +588,62 @@ async function deleteLocation(id, name) {
     }
 }
 
-// 10. Permanent Map Marker Factory with Full Screen-Reader & Action Buttons
-function createMarker(id, lat, lng, name, type) {
+// 11. Reporting a Location (Anti-Troll Defense)
+async function reportLocation(id, name) {
+    const confirmed = confirm(`Report "${name}" as spam, incorrect, or inappropriate? Our community moderation will review it.`);
+    if (!confirmed) return;
+
+    try {
+        const item = markersMap.get(id);
+        const currentFlags = (item && item.flags) || 0;
+        await updateDoc(doc(db, "locations", id), {
+            flags: currentFlags + 1,
+            lastReportedAt: serverTimestamp()
+        });
+        announce("Thank you for your report. The location has been flagged for review.");
+        alert("Thank you. This location has been flagged for community review.");
+    } catch (err) {
+        console.error("Report error:", err);
+    }
+}
+
+// 12. Permanent Map Marker Factory with Full Screen-Reader & Action Buttons
+function createMarker(id, lat, lng, name, type, notes = "", flags = 0) {
     const marker = L.marker([lat, lng]).addTo(map);
 
-    const safeName = name.replace(/'/g, "\\'");
     const popupContent = document.createElement('div');
-    popupContent.style.minWidth = '180px';
+    popupContent.style.minWidth = '200px';
     popupContent.innerHTML = `
         <div style="font-family: inherit;">
             <strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">${name}</strong>
             <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e8f5e9; color: #1b5e20; font-weight: bold; font-size: 0.85rem;">
                 ${type}
             </span>
+            ${notes ? `<div style="font-size: 0.85rem; margin-top: 6px; padding: 4px 6px; background: #f5f5f5; border-radius: 4px; color: #333;">♿ ${notes}</div>` : ''}
             <div style="font-size: 0.8rem; margin: 6px 0; color: #666;">
                 Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}
             </div>
-            <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <div style="display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;">
                 <button type="button" class="edit-btn" style="padding: 2px 8px; font-size: 0.8rem;" aria-label="Edit this location">✏️ Edit</button>
                 <button type="button" class="delete-btn" style="padding: 2px 8px; font-size: 0.8rem;" aria-label="Delete this location">🗑️ Delete</button>
+                <button type="button" class="report-btn" style="padding: 2px 6px; font-size: 0.8rem;" title="Report this location" aria-label="Report location">🚩</button>
             </div>
         </div>
     `;
 
     popupContent.querySelector('.edit-btn').addEventListener('click', () => {
         marker.closePopup();
-        startEditLocation(id, name, type, lat, lng);
+        startEditLocation(id, name, type, lat, lng, notes);
     });
 
     popupContent.querySelector('.delete-btn').addEventListener('click', () => {
         marker.closePopup();
         deleteLocation(id, name);
+    });
+
+    popupContent.querySelector('.report-btn').addEventListener('click', () => {
+        marker.closePopup();
+        reportLocation(id, name);
     });
 
     marker.bindPopup(popupContent);
@@ -601,7 +671,7 @@ function createMarker(id, lat, lng, name, type) {
     return marker;
 }
 
-// 11. Real-Time Sync Store
+// 13. Real-Time Sync Store
 const markersMap = new Map();
 
 function renderLocationsList() {
@@ -621,6 +691,7 @@ function renderLocationsList() {
                 <div class="location-info">
                     <strong>${p.name}</strong>
                     <span class="location-tag">${p.type}</span>
+                    ${p.notes ? `<div class="location-notes">♿ ${p.notes}</div>` : ''}
                 </div>
             </div>
             <div class="action-btn-group">
@@ -633,6 +704,9 @@ function renderLocationsList() {
                 <button type="button" class="delete-btn" aria-label="Delete ${p.name}">
                     🗑️ Delete
                 </button>
+                <button type="button" class="report-btn" aria-label="Report ${p.name}">
+                    🚩 Report
+                </button>
             </div>
         `;
 
@@ -643,11 +717,15 @@ function renderLocationsList() {
         });
 
         li.querySelector('.edit-btn').addEventListener('click', () => {
-            startEditLocation(p.id, p.name, p.type, p.lat, p.lng);
+            startEditLocation(p.id, p.name, p.type, p.lat, p.lng, p.notes || "");
         });
 
         li.querySelector('.delete-btn').addEventListener('click', () => {
             deleteLocation(p.id, p.name);
+        });
+
+        li.querySelector('.report-btn').addEventListener('click', () => {
+            reportLocation(p.id, p.name);
         });
 
         listEl.appendChild(li);
@@ -658,13 +736,13 @@ function renderLocationsList() {
 const q = query(locationsCol, orderBy("createdAt", "desc"));
 onSnapshot(q, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
-        const doc = change.doc;
-        const data = doc.data();
-        const id = doc.id;
+        const docSnap = change.doc;
+        const data = docSnap.data();
+        const id = docSnap.id;
 
         if (change.type === "added") {
             if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other");
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0);
                 markersMap.set(id, { ...data, id, marker });
             }
         }
@@ -679,7 +757,7 @@ onSnapshot(q, (snapshot) => {
             if (markersMap.has(id)) {
                 const item = markersMap.get(id);
                 map.removeLayer(item.marker);
-                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other");
+                const marker = createMarker(id, data.lat, data.lng, data.name || "Accessible Point", data.type || "Other", data.notes || "", data.flags || 0);
                 markersMap.set(id, { ...data, id, marker });
             }
         }
@@ -691,7 +769,7 @@ onSnapshot(q, (snapshot) => {
     announce("Working with cached offline points.");
 });
 
-// 12. Interaction Logic: Form Submission (Create or Update)
+// 14. Interaction Logic: Form Submission (Create or Update)
 const form = document.getElementById('add-location-form');
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -713,7 +791,6 @@ if (form) {
             return;
         }
 
-        // Validate respectful naming
         const validation = validateRespectfulName(data.name, data.type);
         if (!validation.valid) {
             announce(validation.error);
@@ -722,35 +799,42 @@ if (form) {
             return;
         }
 
+        const cleanNotes = (data.notes || "").trim().substring(0, 300);
+
         submitBtn.disabled = true;
         const originalText = submitBtn.textContent;
         submitBtn.textContent = editingLocationId ? "Saving Updates..." : "Publishing to Live Map...";
 
         try {
             if (editingLocationId) {
-                // Update existing location
                 await updateDoc(doc(db, "locations", editingLocationId), {
                     name: validation.formatted,
                     type: data.type,
                     lat: lat,
                     lng: lng,
+                    notes: cleanNotes,
                     updatedAt: serverTimestamp()
                 });
                 announce(`Success! Updated ${validation.formatted} on the live map.`);
                 cancelEditMode();
             } else {
-                // Create new location
-                await addDoc(locationsCol, {
+                const docRef = await addDoc(locationsCol, {
                     name: validation.formatted,
                     type: data.type,
                     lat: lat,
                     lng: lng,
+                    notes: cleanNotes,
+                    flags: 0,
                     createdAt: serverTimestamp()
                 });
+
                 announce(`Success! Published ${validation.formatted} live to everyone's map.`);
                 form.reset();
                 clearDraftLocation();
                 isUserTypingCustomName = false;
+
+                // Show 15-second Undo / Remove banner
+                showUndoOption(docRef.id, validation.formatted);
             }
         } catch (err) {
             console.error("Error saving point to Firestore:", err);
@@ -763,7 +847,7 @@ if (form) {
     });
 }
 
-// 13. Interaction Logic: GeoJSON Export
+// 15. Interaction Logic: GeoJSON Export
 const exportBtn = document.getElementById('export-btn');
 if (exportBtn) {
     exportBtn.addEventListener('click', () => {
@@ -779,7 +863,8 @@ if (exportBtn) {
                 properties: {
                     id: p.id,
                     name: p.name,
-                    type: p.type
+                    type: p.type,
+                    notes: p.notes || ""
                 }
             }))
         };
@@ -797,7 +882,7 @@ if (exportBtn) {
     });
 }
 
-// 14. Theme Toggle
+// 16. Theme Toggle
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
     themeToggle.addEventListener('click', () => {
@@ -807,7 +892,7 @@ if (themeToggle) {
     });
 }
 
-// 15. Service Worker for Wilderness Offline Caching
+// 17. Service Worker for Wilderness Offline Caching
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
 }
